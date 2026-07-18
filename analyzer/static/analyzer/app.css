@@ -504,3 +504,237 @@ code {
         gap: 4px;
     }
 }
+
+.navigation {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.navigation > a:not(.nav-button) {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.navigation > a:not(.nav-button):hover {
+    color: var(--text);
+}
+
+.nav-button,
+.primary-link-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 16px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #041310;
+    font-weight: 900;
+}
+
+.nav-button:hover,
+.primary-link-button:hover {
+    filter: brightness(1.08);
+}
+
+.page-heading,
+.detail-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 36px;
+}
+
+.page-heading h1,
+.detail-header h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 5vw, 4rem);
+    letter-spacing: -0.045em;
+}
+
+.compact-hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+}
+
+.statistic-card {
+    padding: 22px;
+}
+
+.statistic-card span {
+    display: block;
+    margin-bottom: 14px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.statistic-card strong {
+    display: block;
+    font-size: 2.3rem;
+    letter-spacing: -0.04em;
+}
+
+.history-section {
+    margin-top: 20px;
+}
+
+.investigation-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 22px;
+}
+
+.investigation-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 28px;
+    padding: 24px;
+    transition:
+        transform 160ms ease,
+        border-color 160ms ease,
+        background 160ms ease;
+}
+
+.investigation-row:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    background: var(--surface-raised);
+}
+
+.investigation-main {
+    min-width: 0;
+}
+
+.investigation-main h3 {
+    margin: 14px 0 8px;
+    font-size: 1.25rem;
+}
+
+.investigation-main p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.investigation-meta {
+    display: grid;
+    flex-shrink: 0;
+    gap: 5px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    text-align: right;
+}
+
+.empty-state {
+    display: grid;
+    justify-items: center;
+    padding: 60px 24px;
+    text-align: center;
+}
+
+.empty-state p {
+    max-width: 500px;
+    margin-bottom: 24px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.empty-icon {
+    display: grid;
+    width: 68px;
+    height: 68px;
+    margin-bottom: 20px;
+    place-items: center;
+    border: 1px solid #3f7a70;
+    border-radius: 18px;
+    background: var(--accent-dark);
+    color: var(--accent);
+    font-weight: 900;
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 24px;
+    color: var(--accent);
+    font-weight: 800;
+}
+
+.detail-labels {
+    justify-content: flex-start;
+    margin-bottom: 18px;
+}
+
+.detail-date {
+    margin: 14px 0 0;
+    color: var(--muted);
+}
+
+.raw-events-card {
+    margin-top: 22px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.raw-events-card summary {
+    cursor: pointer;
+    padding: 20px 24px;
+    font-weight: 800;
+}
+
+.raw-events-card pre {
+    max-height: 500px;
+    margin: 0;
+    padding: 24px;
+    overflow: auto;
+    border-top: 1px solid var(--border);
+    background: #07111b;
+    color: #bcd0dd;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+    .statistics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .page-heading,
+    .detail-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .investigation-row {
+        flex-direction: column;
+    }
+
+    .investigation-meta {
+        text-align: left;
+    }
+}
+
+@media (max-width: 600px) {
+    .navigation > a:not(.nav-button) {
+        display: none;
+    }
+
+    .nav-button {
+        padding: 9px 12px;
+        font-size: 0.82rem;
+    }
+
+    .statistics-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

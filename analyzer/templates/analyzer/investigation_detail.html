@@ -1,0 +1,241 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    {{ investigation.title }} | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section class="detail-header">
+        <div>
+            <a
+                class="back-link"
+                href="{% url 'analyzer:investigation_list' %}"
+            >
+                ← All investigations
+            </a>
+
+            <div class="assessment-labels detail-labels">
+                <span
+                    class="severity-badge severity-{{ investigation.severity }}"
+                >
+                    {{ investigation.get_severity_display }}
+                </span>
+
+                <span class="confidence-badge">
+                    {{ investigation.get_confidence_display }}
+                    confidence
+                </span>
+            </div>
+
+            <h1>{{ investigation.title }}</h1>
+
+            <p class="detail-date">
+                Created
+                {{ investigation.created_at|date:"F j, Y" }}
+                at
+                {{ investigation.created_at|time:"g:i A" }}
+            </p>
+        </div>
+    </section>
+
+    <article class="card result-card">
+        <p class="result-kicker">Assessment summary</p>
+        <p class="summary">
+            {{ investigation.summary }}
+        </p>
+    </article>
+
+    <div class="results-grid">
+        <article class="card result-card">
+            <h2>Timeline</h2>
+
+            {% if analysis.timeline %}
+                <ol class="timeline">
+                    {% for item in analysis.timeline %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="muted">
+                    No reliable timeline identified.
+                </p>
+            {% endif %}
+        </article>
+
+        <article class="card result-card">
+            <h2>Possible attack path</h2>
+
+            {% if analysis.possible_attack_path %}
+                <ol class="attack-path">
+                    {% for item in analysis.possible_attack_path %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="muted">
+                    Insufficient evidence to construct an attack path.
+                </p>
+            {% endif %}
+        </article>
+    </div>
+
+    <article class="card result-card">
+        <h2>Important evidence</h2>
+
+        {% if analysis.evidence %}
+            <div class="evidence-grid">
+                {% for item in analysis.evidence %}
+                    <div class="evidence-item">
+                        <h3>{{ item.title }}</h3>
+
+                        <p>{{ item.description }}</p>
+
+                        {% if item.event_references %}
+                            <div class="reference-list">
+                                {% for reference in item.event_references %}
+                                    <code>{{ reference }}</code>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="muted">
+                No strong evidence items were identified.
+            </p>
+        {% endif %}
+    </article>
+
+    <div class="results-grid">
+        <article class="card result-card">
+            <h2>MITRE ATT&amp;CK</h2>
+
+            {% if analysis.mitre_attack %}
+                <div class="technique-list">
+                    {% for technique in analysis.mitre_attack %}
+                        <div class="technique">
+                            <div class="technique-heading">
+                                <code>
+                                    {{ technique.technique_id }}
+                                </code>
+
+                                <strong>
+                                    {{ technique.technique_name }}
+                                </strong>
+                            </div>
+
+                            <p>
+                                {{ technique.explanation }}
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">
+                    No reliable technique mapping identified.
+                </p>
+            {% endif %}
+        </article>
+
+        <article class="card result-card">
+            <h2>Indicators</h2>
+
+            {% if analysis.indicators %}
+                <div class="tag-list">
+                    {% for indicator in analysis.indicators %}
+                        <code>{{ indicator }}</code>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">
+                    No useful indicators extracted.
+                </p>
+            {% endif %}
+
+            <h3 class="subheading">Affected assets</h3>
+
+            {% if analysis.affected_assets %}
+                <ul>
+                    {% for asset in analysis.affected_assets %}
+                        <li>{{ asset }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="muted">
+                    No affected asset confirmed.
+                </p>
+            {% endif %}
+
+            <h3 class="subheading">Affected accounts</h3>
+
+            {% if analysis.affected_accounts %}
+                <ul>
+                    {% for account in analysis.affected_accounts %}
+                        <li>{{ account }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="muted">
+                    No affected account confirmed.
+                </p>
+            {% endif %}
+        </article>
+    </div>
+
+    <div class="results-grid">
+        <article class="card result-card">
+            <h2>Investigation steps</h2>
+
+            {% if analysis.investigation_steps %}
+                <ol>
+                    {% for item in analysis.investigation_steps %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="muted">
+                    No investigation steps generated.
+                </p>
+            {% endif %}
+        </article>
+
+        <article class="card result-card containment-card">
+            <h2>Containment actions</h2>
+
+            {% if analysis.containment_actions %}
+                <ol>
+                    {% for item in analysis.containment_actions %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ol>
+            {% else %}
+                <p class="muted">
+                    No containment actions generated.
+                </p>
+            {% endif %}
+        </article>
+    </div>
+
+    <article class="card result-card limitations-card">
+        <h2>Limitations and missing evidence</h2>
+
+        {% if analysis.limitations %}
+            <ul>
+                {% for item in analysis.limitations %}
+                    <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">
+                No limitations were returned.
+            </p>
+        {% endif %}
+    </article>
+
+    <details class="card raw-events-card">
+        <summary>View submitted security events</summary>
+
+        <pre>{{ investigation.raw_events }}</pre>
+    </details>
+{% endblock %}

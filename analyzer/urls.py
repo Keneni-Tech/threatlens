@@ -6,5 +6,19 @@ from analyzer import views
 app_name = "analyzer"
 
 urlpatterns = [
-    path("", views.analyze_incident, name="analyze"),
+    path(
+        "",
+        views.investigation_list,
+        name="investigation_list",
+    ),
+    path(
+        "investigations/new/",
+        views.investigation_create,
+        name="investigation_create",
+    ),
+    path(
+        "investigations/<uuid:investigation_id>/",
+        views.investigation_detail,
+        name="investigation_detail",
+    ),
 ]

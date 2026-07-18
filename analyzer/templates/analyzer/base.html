@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+            ThreatLens
+        {% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'analyzer/app.css' %}"
+    >
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-content">
+            <a
+                class="brand"
+                href="{% url 'analyzer:investigation_list' %}"
+            >
+                <span class="brand-mark">TL</span>
+
+                <span>
+                    <strong>ThreatLens</strong>
+                    <small>AI Incident Investigator</small>
+                </span>
+            </a>
+
+            <nav class="navigation">
+                <a
+                    href="{% url 'analyzer:investigation_list' %}"
+                >
+                    Investigations
+                </a>
+
+                <a
+                    class="nav-button"
+                    href="{% url 'analyzer:investigation_create' %}"
+                >
+                    New investigation
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>

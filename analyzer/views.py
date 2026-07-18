@@ -1,21 +1,65 @@
+from __future__ import annotations
+
 import logging
 
-from django.shortcuts import render
+from django.db.models import Count
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from analyzer.forms import IncidentAnalysisForm, SAMPLE_SECURITY_EVENTS
+from analyzer.models import Investigation
 from analyzer.services.incident_analyzer import (
     IncidentAnalysisError,
     IncidentAnalyzer,
+)
+from analyzer.services.investigation_service import (
+    InvestigationService,
 )
 
 
 logger = logging.getLogger(__name__)
 
 
+@require_http_methods(["GET"])
+def investigation_list(request: HttpRequest) -> HttpResponse:
+    investigations = Investigation.objects.all()
+
+    severity_counts = {
+        item["severity"]: item["total"]
+        for item in (
+            Investigation.objects
+            .values("severity")
+            .annotate(total=Count("id"))
+        )
+    }
+
+    context = {
+        "investigations": investigations,
+        "total_investigations": investigations.count(),
+        "critical_count": severity_counts.get(
+            Investigation.Severity.CRITICAL,
+            0,
+        ),
+        "high_count": severity_counts.get(
+            Investigation.Severity.HIGH,
+            0,
+        ),
+        "medium_count": severity_counts.get(
+            Investigation.Severity.MEDIUM,
+            0,
+        ),
+    }
+
+    return render(
+        request,
+        "analyzer/investigation_list.html",
+        context,
+    )
+
+
 @require_http_methods(["GET", "POST"])
-def analyze_incident(request):
-    assessment = None
+def investigation_create(request: HttpRequest) -> HttpResponse:
     analysis_error = None
 
     if request.method == "POST":
@@ -26,23 +70,66 @@ def analyze_incident(request):
 
             try:
                 analyzer = IncidentAnalyzer()
-                assessment = analyzer.analyze(security_events)
+
+                assessment = analyzer.analyze(
+                    security_events,
+                )
+
+                investigation = (
+                    InvestigationService.create_investigation(
+                        raw_events=security_events,
+                        assessment=assessment,
+                    )
+                )
+
+                return redirect(investigation)
 
             except IncidentAnalysisError as exc:
                 analysis_error = str(exc)
+
+            except Exception:
+                logger.exception(
+                    "ThreatLens failed to save the investigation."
+                )
+
+                analysis_error = (
+                    "The analysis completed, but ThreatLens could not "
+                    "save the investigation."
+                )
 
     else:
         form = IncidentAnalysisForm()
 
     context = {
         "form": form,
-        "assessment": assessment,
         "analysis_error": analysis_error,
         "sample_security_events": SAMPLE_SECURITY_EVENTS,
     }
 
     return render(
         request,
-        "analyzer/analyze.html",
+        "analyzer/investigation_create.html",
+        context,
+    )
+
+
+@require_http_methods(["GET"])
+def investigation_detail(
+    request: HttpRequest,
+    investigation_id,
+) -> HttpResponse:
+    investigation = get_object_or_404(
+        Investigation,
+        id=investigation_id,
+    )
+
+    context = {
+        "investigation": investigation,
+        "analysis": investigation.analysis,
+    }
+
+    return render(
+        request,
+        "analyzer/investigation_detail.html",
         context,
     )

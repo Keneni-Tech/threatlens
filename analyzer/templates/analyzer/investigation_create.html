@@ -1,0 +1,153 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    New Investigation | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section class="hero compact-hero">
+        <p class="eyebrow">
+            Defensive security intelligence
+        </p>
+
+        <h1>
+            Analyze security events.
+        </h1>
+
+        <p class="hero-copy">
+            Submit sanitized logs or security events. ThreatLens will
+            generate and save a structured incident investigation.
+        </p>
+    </section>
+
+    <section class="workspace">
+        <div class="input-panel card">
+            <div class="section-heading">
+                <div>
+                    <p class="step-label">New case</p>
+                    <h2>Submit security events</h2>
+                </div>
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    id="load-sample"
+                >
+                    Load sample
+                </button>
+            </div>
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <div class="field-group">
+                    <label
+                        for="{{ form.security_events.id_for_label }}"
+                    >
+                        {{ form.security_events.label }}
+                    </label>
+
+                    {{ form.security_events }}
+
+                    <div class="field-footer">
+                        <span>
+                            Use fictional or sanitized data only.
+                        </span>
+
+                        <span id="character-count">
+                            0 characters
+                        </span>
+                    </div>
+
+                    {% for error in form.security_events.errors %}
+                        <p class="field-error">
+                            {{ error }}
+                        </p>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="primary-button"
+                    type="submit"
+                >
+                    Analyze and save investigation
+                </button>
+            </form>
+
+            {% if analysis_error %}
+                <div class="error-box" role="alert">
+                    <strong>Analysis unsuccessful</strong>
+                    <p>{{ analysis_error }}</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <aside class="information-panel card">
+            <p class="step-label">
+                ThreatLens workflow
+            </p>
+
+            <h2>Generated assessment</h2>
+
+            <ul class="feature-list">
+                <li>Incident severity and confidence</li>
+                <li>Evidence-grounded summary</li>
+                <li>Chronological timeline</li>
+                <li>Possible attack path</li>
+                <li>MITRE ATT&amp;CK mapping</li>
+                <li>Indicators and affected assets</li>
+                <li>Investigation recommendations</li>
+                <li>Containment actions</li>
+            </ul>
+
+            <div class="privacy-note">
+                <strong>Protect sensitive information</strong>
+
+                <p>
+                    Do not submit passwords, API keys, private keys,
+                    authentication tokens, or personal information.
+                </p>
+            </div>
+        </aside>
+    </section>
+
+    {{ sample_security_events|json_script:"sample-events-data" }}
+
+    <script>
+        const textarea = document.getElementById(
+            "{{ form.security_events.id_for_label }}"
+        );
+
+        const characterCount = document.getElementById(
+            "character-count"
+        );
+
+        const sampleData = JSON.parse(
+            document.getElementById(
+                "sample-events-data"
+            ).textContent
+        );
+
+        function updateCharacterCount() {
+            const count = textarea.value.length;
+
+            characterCount.textContent =
+                `${count.toLocaleString()} characters`;
+        }
+
+        document
+            .getElementById("load-sample")
+            .addEventListener("click", () => {
+                textarea.value = sampleData;
+                updateCharacterCount();
+                textarea.focus();
+            });
+
+        textarea.addEventListener(
+            "input",
+            updateCharacterCount
+        );
+
+        updateCharacterCount();
+    </script>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    Investigations | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section class="page-heading">
+        <div>
+            <p class="eyebrow">
+                Investigation workspace
+            </p>
+
+            <h1>
+                Security investigations
+            </h1>
+
+            <p class="hero-copy">
+                Review saved AI-assisted incident assessments,
+                evidence, timelines, and containment recommendations.
+            </p>
+        </div>
+
+        <a
+            class="primary-link-button"
+            href="{% url 'analyzer:investigation_create' %}"
+        >
+            + New investigation
+        </a>
+    </section>
+
+    <section class="statistics-grid">
+        <article class="card statistic-card">
+            <span>Total investigations</span>
+            <strong>{{ total_investigations }}</strong>
+        </article>
+
+        <article class="card statistic-card">
+            <span>Critical</span>
+            <strong>{{ critical_count }}</strong>
+        </article>
+
+        <article class="card statistic-card">
+            <span>High</span>
+            <strong>{{ high_count }}</strong>
+        </article>
+
+        <article class="card statistic-card">
+            <span>Medium</span>
+            <strong>{{ medium_count }}</strong>
+        </article>
+    </section>
+
+    <section class="history-section">
+        <div class="section-heading">
+            <div>
+                <p class="step-label">
+                    Investigation history
+                </p>
+
+                <h2>Recent assessments</h2>
+            </div>
+        </div>
+
+        {% if investigations %}
+            <div class="investigation-list">
+                {% for investigation in investigations %}
+                    <a
+                        class="card investigation-row"
+                        href="{{ investigation.get_absolute_url }}"
+                    >
+                        <div class="investigation-main">
+                            <div class="assessment-labels">
+                                <span
+                                    class="severity-badge severity-{{ investigation.severity }}"
+                                >
+                                    {{ investigation.get_severity_display }}
+                                </span>
+
+                                <span class="confidence-badge">
+                                    {{ investigation.get_confidence_display }}
+                                    confidence
+                                </span>
+                            </div>
+
+                            <h3>{{ investigation.title }}</h3>
+
+                            <p>
+                                {{ investigation.summary|truncatechars:180 }}
+                            </p>
+                        </div>
+
+                        <div class="investigation-meta">
+                            <time
+                                datetime="{{ investigation.created_at|date:'c' }}"
+                            >
+                                {{ investigation.created_at|date:"M j, Y" }}
+                            </time>
+
+                            <span>
+                                {{ investigation.created_at|time:"g:i A" }}
+                            </span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="card empty-state">
+                <div class="empty-icon">TL</div>
+
+                <h3>No investigations yet</h3>
+
+                <p>
+                    Submit sanitized security events to create your
+                    first AI-assisted investigation.
+                </p>
+
+                <a
+                    class="primary-link-button"
+                    href="{% url 'analyzer:investigation_create' %}"
+                >
+                    Create first investigation
+                </a>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}
