@@ -1,0 +1,25 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    Report Error | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section class="card report-error-page">
+        <p class="eyebrow">Report generation error</p>
+
+        <h1>ThreatLens could not generate this report.</h1>
+
+        <p>
+            The saved investigation is still available. Return to the
+            investigation and try downloading the report again.
+        </p>
+
+        <a
+            class="primary-link-button"
+            href="{{ investigation.get_absolute_url }}"
+        >
+            Return to investigation
+        </a>
+    </section>
+{% endblock %}

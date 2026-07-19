@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+
+import re
+from io import BytesIO
+
+from django.http import FileResponse
+
 import logging
 
 from django.db.models import Count
@@ -17,6 +23,11 @@ from analyzer.services.investigation_service import (
     InvestigationService,
 )
 
+
+from analyzer.services.pdf_report_service import (
+    InvestigationPDFReportService,
+    PDFReportError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -133,3 +144,57 @@ def investigation_detail(
         "analyzer/investigation_detail.html",
         context,
     )
+
+@require_http_methods(["GET"])
+def investigation_pdf(
+    request: HttpRequest,
+    investigation_id,
+) -> FileResponse | HttpResponse:
+    investigation = get_object_or_404(
+        Investigation,
+        id=investigation_id,
+    )
+
+    try:
+        pdf_content = InvestigationPDFReportService(
+            investigation
+        ).generate()
+
+    except PDFReportError:
+        logger.exception(
+            "PDF report generation failed for investigation %s.",
+            investigation.id,
+        )
+
+        return render(
+            request,
+            "analyzer/report_error.html",
+            {
+                "investigation": investigation,
+            },
+            status=500,
+        )
+
+    safe_title = re.sub(
+        r"[^A-Za-z0-9_-]+",
+        "-",
+        investigation.title,
+    ).strip("-")
+
+    if not safe_title:
+        safe_title = "investigation"
+
+    filename = (
+        f"threatlens-{safe_title[:60]}-"
+        f"{str(investigation.id)[:8]}.pdf"
+    )
+
+    pdf_file = BytesIO(pdf_content)
+
+    return FileResponse(
+        pdf_file,
+        as_attachment=True,
+        filename=filename,
+        content_type="application/pdf",
+    )
+

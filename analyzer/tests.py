@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+from io import BytesIO
+import uuid
+from django.http import FileResponse
+from pypdf import PdfReader
+
+from analyzer.services.pdf_report_service import (
+    InvestigationPDFReportService,
+    PDFReportError,
+)
+
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
@@ -219,3 +229,196 @@ class InvestigationViewTests(TestCase):
             response,
             "Paste security-event data before analyzing.",
         )
+
+    
+class InvestigationPDFReportServiceTests(TestCase):
+    def setUp(self):
+        self.assessment = build_assessment()
+
+        self.investigation = (
+            InvestigationService.create_investigation(
+                raw_events=(
+                    "Repeated login failures followed by a "
+                    "successful administrator login."
+                ),
+                assessment=self.assessment,
+            )
+        )
+
+    def test_generate_returns_valid_pdf(self):
+        pdf_content = InvestigationPDFReportService(
+            self.investigation
+        ).generate()
+
+        self.assertTrue(
+            pdf_content.startswith(b"%PDF"),
+        )
+
+        reader = PdfReader(
+            BytesIO(pdf_content)
+        )
+
+        self.assertGreaterEqual(
+            len(reader.pages),
+            1,
+        )
+
+    def test_generated_pdf_contains_investigation_content(self):
+        pdf_content = InvestigationPDFReportService(
+            self.investigation
+        ).generate()
+
+        reader = PdfReader(
+            BytesIO(pdf_content)
+        )
+
+        extracted_text = "\n".join(
+            page.extract_text() or ""
+            for page in reader.pages
+        )
+
+        self.assertIn(
+            "Possible administrator account compromise",
+            extracted_text,
+        )
+
+        self.assertIn(
+            "Executive Summary",
+            extracted_text,
+        )
+
+        self.assertIn(
+            "Recommended Containment Actions",
+            extracted_text,
+        )
+
+    def test_report_escapes_markup_characters(self):
+        self.investigation.title = (
+            "PowerShell <script> & account activity"
+        )
+
+        self.investigation.summary = (
+            "Observed command text containing < and > characters."
+        )
+
+        self.investigation.save(
+            update_fields=[
+                "title",
+                "summary",
+                "updated_at",
+            ]
+        )
+
+        pdf_content = InvestigationPDFReportService(
+            self.investigation
+        ).generate()
+
+        self.assertTrue(
+            pdf_content.startswith(b"%PDF"),
+        )
+
+    
+class InvestigationPDFViewTests(TestCase):
+    def setUp(self):
+        self.investigation = (
+            InvestigationService.create_investigation(
+                raw_events="Example security events.",
+                assessment=build_assessment(),
+            )
+        )
+
+        self.url = reverse(
+            "analyzer:investigation_pdf",
+            kwargs={
+                "investigation_id": self.investigation.id,
+            },
+        )
+
+    def test_pdf_view_returns_downloadable_pdf(self):
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
+
+        self.assertIsInstance(
+            response,
+            FileResponse,
+        )
+
+        self.assertEqual(
+            response["Content-Type"],
+            "application/pdf",
+        )
+
+        self.assertIn(
+            "attachment;",
+            response["Content-Disposition"],
+        )
+
+        response_content = b"".join(
+            response.streaming_content
+        )
+
+        self.assertTrue(
+            response_content.startswith(b"%PDF"),
+        )
+
+    def test_pdf_view_returns_404_for_unknown_case(self):
+        import uuid
+
+        response = self.client.get(
+            reverse(
+                "analyzer:investigation_pdf",
+                kwargs={
+                    "investigation_id": uuid.uuid4(),
+                },
+            )
+        )
+
+        self.assertEqual(
+            response.status_code,
+            404,
+        )
+
+    @patch(
+        "analyzer.views.InvestigationPDFReportService.generate"
+    )
+    def test_pdf_view_handles_generation_error(
+        self,
+        generate_mock,
+    ):
+        generate_mock.side_effect = PDFReportError(
+            "Report generation failed."
+        )
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(
+            response.status_code,
+            500,
+        )
+
+        self.assertContains(
+            response,
+            "ThreatLens could not generate this report.",
+            status_code=500,
+        )
+
+    
+
+def test_pdf_view_returns_404_for_unknown_case(self):
+    response = self.client.get(
+        reverse(
+            "analyzer:investigation_pdf",
+            kwargs={
+                "investigation_id": uuid.uuid4(),
+            },
+        )
+    )
+
+    self.assertEqual(
+        response.status_code,
+        404,
+    )

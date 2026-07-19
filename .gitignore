@@ -29,3 +29,6 @@ htmlcov/
 # Operating system
 .DS_Store
 Thumbs.db
+
+# Locally generated reports
+threatlens-*.pdf

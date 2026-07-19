@@ -738,3 +738,68 @@ code {
         grid-template-columns: 1fr 1fr;
     }
 }
+
+.detail-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.report-download-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 44px;
+    padding: 11px 17px;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    background: var(--accent-dark);
+    color: var(--accent);
+    font-weight: 900;
+    white-space: nowrap;
+    transition:
+        background 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+
+.report-download-button:hover {
+    transform: translateY(-1px);
+    background: var(--accent);
+    color: #041310;
+}
+
+.report-download-button span {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.report-error-page {
+    max-width: 760px;
+    padding: 42px;
+}
+
+.report-error-page h1 {
+    margin-bottom: 18px;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    letter-spacing: -0.04em;
+}
+
+.report-error-page p:not(.eyebrow) {
+    margin-bottom: 26px;
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+@media (max-width: 860px) {
+    .detail-actions {
+        width: 100%;
+    }
+
+    .report-download-button {
+        width: 100%;
+    }
+}
+

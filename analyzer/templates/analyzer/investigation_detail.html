@@ -5,39 +5,48 @@
 {% endblock %}
 
 {% block content %}
-    <section class="detail-header">
-        <div>
-            <a
-                class="back-link"
-                href="{% url 'analyzer:investigation_list' %}"
+<section class="detail-header">
+    <div>
+        <a
+            class="back-link"
+            href="{% url 'analyzer:investigation_list' %}"
+        >
+            ← All investigations
+        </a>
+
+        <div class="assessment-labels detail-labels">
+            <span
+                class="severity-badge severity-{{ investigation.severity }}"
             >
-                ← All investigations
-            </a>
+                {{ investigation.get_severity_display }}
+            </span>
 
-            <div class="assessment-labels detail-labels">
-                <span
-                    class="severity-badge severity-{{ investigation.severity }}"
-                >
-                    {{ investigation.get_severity_display }}
-                </span>
-
-                <span class="confidence-badge">
-                    {{ investigation.get_confidence_display }}
-                    confidence
-                </span>
-            </div>
-
-            <h1>{{ investigation.title }}</h1>
-
-            <p class="detail-date">
-                Created
-                {{ investigation.created_at|date:"F j, Y" }}
-                at
-                {{ investigation.created_at|time:"g:i A" }}
-            </p>
+            <span class="confidence-badge">
+                {{ investigation.get_confidence_display }}
+                confidence
+            </span>
         </div>
-    </section>
 
+        <h1>{{ investigation.title }}</h1>
+
+        <p class="detail-date">
+            Created
+            {{ investigation.created_at|date:"F j, Y" }}
+            at
+            {{ investigation.created_at|time:"g:i A" }}
+        </p>
+    </div>
+
+    <div class="detail-actions">
+        <a
+            class="report-download-button"
+            href="{% url 'analyzer:investigation_pdf' investigation.id %}"
+        >
+            <span aria-hidden="true">↓</span>
+            Download PDF report
+        </a>
+    </div>
+</section>
     <article class="card result-card">
         <p class="result-kicker">Assessment summary</p>
         <p class="summary">

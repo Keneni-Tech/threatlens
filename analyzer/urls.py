@@ -21,4 +21,9 @@ urlpatterns = [
         views.investigation_detail,
         name="investigation_detail",
     ),
+    path(
+    "investigations/<uuid:investigation_id>/report.pdf",
+    views.investigation_pdf,
+    name="investigation_pdf",
+),
 ]
