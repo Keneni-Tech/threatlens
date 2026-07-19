@@ -17,6 +17,12 @@ ThreatLens helps security analysts transform raw security events into structured
 * Investigation recommendations
 * Containment recommendations
 * Executive-ready incident summaries
+- Paste raw security events for AI-assisted investigation
+- Upload TXT, LOG, JSON, JSONL, and CSV event files
+- Validate and normalize structured security-event data
+- Reject oversized, binary, malformed, and unsupported uploads
+- Preserve investigation input provenance and parsed event counts
+- Generate downloadable executive PDF reports
 
 ---
 
@@ -102,6 +108,16 @@ Never upload:
 * Private keys
 * Customer secrets
 * Sensitive personal information
+
+## Upload Security
+
+ThreatLens limits uploaded event files to 5 MB and supports only TXT,
+LOG, JSON, JSONL, and CSV input. Uploaded files are parsed in memory
+and are not permanently stored as files in the current MVP.
+
+Users should submit only fictional or sanitized data and must never
+upload passwords, API keys, authentication tokens, private keys, or
+unnecessary personal information.
 
 ---
 

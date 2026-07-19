@@ -10,6 +10,8 @@ from analyzer.services.pdf_report_service import (
     PDFReportError,
 )
 
+from analyzer.forms import IncidentAnalysisForm
+
 from unittest.mock import Mock, patch
 
 from django.test import TestCase
@@ -19,6 +21,16 @@ from analyzer.models import Investigation
 from analyzer.schemas import IncidentAssessment
 from analyzer.services.investigation_service import (
     InvestigationService,
+)
+
+from django.core.files.uploadedfile import (
+    SimpleUploadedFile,
+)
+
+from analyzer.services.event_file_parser import (
+    EventFileParseError,
+    EventFileParser,
+    EventFileValidationError,
 )
 
 
@@ -136,6 +148,15 @@ class InvestigationServiceTests(TestCase):
             "Example event data.",
         )
 
+        self.assertEqual(
+            investigation.input_source,
+            Investigation.InputSource.PASTED,
+        )
+
+        self.assertEqual(
+            investigation.source_filename,
+            "",
+        )
 
 class InvestigationViewTests(TestCase):
     def test_list_page_displays_saved_investigation(self):
@@ -227,10 +248,191 @@ class InvestigationViewTests(TestCase):
 
         self.assertContains(
             response,
-            "Paste security-event data before analyzing.",
+            "Paste security events or upload an event file.",
         )
 
-    
+    @patch("analyzer.views.IncidentAnalyzer")
+    def test_create_view_analyzes_uploaded_json_file(
+        self,
+        analyzer_class,
+    ):
+        analyzer = Mock()
+        analyzer.analyze.return_value = build_assessment()
+        analyzer_class.return_value = analyzer
+
+        uploaded_file = SimpleUploadedFile(
+            "authentication-events.json",
+            (
+                b'[{"event":"login_failure","user":"admin"},'
+                b'{"event":"login_success","user":"admin"}]'
+            ),
+            content_type="application/json",
+        )
+
+        response = self.client.post(
+            reverse("analyzer:investigation_create"),
+            {
+                "event_file": uploaded_file,
+            },
+        )
+
+        investigation = Investigation.objects.get()
+
+        self.assertRedirects(
+            response,
+            investigation.get_absolute_url(),
+        )
+
+        self.assertEqual(
+            investigation.input_source,
+            Investigation.InputSource.UPLOADED_FILE,
+        )
+
+        self.assertEqual(
+            investigation.source_filename,
+            "authentication-events.json",
+        )
+
+        self.assertEqual(
+            investigation.source_content_type,
+            "application/json",
+        )
+
+        self.assertEqual(
+            investigation.source_event_count,
+            2,
+        )
+
+        self.assertIn(
+            "login_failure",
+            investigation.raw_events,
+        )
+
+        analyzer.analyze.assert_called_once_with(
+            investigation.raw_events
+        )
+
+
+@patch("analyzer.views.IncidentAnalyzer")
+def test_create_view_analyzes_uploaded_csv_file(
+    self,
+    analyzer_class,
+):
+    analyzer = Mock()
+    analyzer.analyze.return_value = build_assessment()
+    analyzer_class.return_value = analyzer
+
+    uploaded_file = SimpleUploadedFile(
+        "events.csv",
+        (
+            b"timestamp,event,user\n"
+            b"2026-07-18T10:00:00Z,"
+            b"login_failure,administrator\n"
+        ),
+        content_type="text/csv",
+    )
+
+    response = self.client.post(
+        reverse("analyzer:investigation_create"),
+        {
+            "event_file": uploaded_file,
+        },
+    )
+
+    investigation = Investigation.objects.get()
+
+    self.assertRedirects(
+        response,
+        investigation.get_absolute_url(),
+    )
+
+    self.assertEqual(
+        investigation.source_event_count,
+        1,
+    )
+
+    self.assertEqual(
+        investigation.source_filename,
+        "events.csv",
+    )
+
+
+@patch("analyzer.views.IncidentAnalyzer")
+def test_invalid_uploaded_file_does_not_call_ai(
+    self,
+    analyzer_class,
+):
+    uploaded_file = SimpleUploadedFile(
+        "events.json",
+        b'{"event": invalid}',
+        content_type="application/json",
+    )
+
+    response = self.client.post(
+        reverse("analyzer:investigation_create"),
+        {
+            "event_file": uploaded_file,
+        },
+    )
+
+    self.assertEqual(
+        response.status_code,
+        200,
+    )
+
+    self.assertContains(
+        response,
+        "The uploaded JSON file is invalid",
+    )
+
+    self.assertEqual(
+        Investigation.objects.count(),
+        0,
+    )
+
+    analyzer_class.assert_not_called()
+
+
+@patch("analyzer.views.IncidentAnalyzer")
+def test_pasted_input_records_pasted_source(
+    self,
+    analyzer_class,
+):
+    analyzer = Mock()
+    analyzer.analyze.return_value = build_assessment()
+    analyzer_class.return_value = analyzer
+
+    response = self.client.post(
+        reverse("analyzer:investigation_create"),
+        {
+            "security_events": (
+                "event=login_failure user=administrator\n"
+                "event=login_success user=administrator"
+            ),
+        },
+    )
+
+    investigation = Investigation.objects.get()
+
+    self.assertRedirects(
+        response,
+        investigation.get_absolute_url(),
+    )
+
+    self.assertEqual(
+        investigation.input_source,
+        Investigation.InputSource.PASTED,
+    )
+
+    self.assertEqual(
+        investigation.source_filename,
+        "",
+    )
+
+    self.assertEqual(
+        investigation.source_event_count,
+        2,
+    )
 class InvestigationPDFReportServiceTests(TestCase):
     def setUp(self):
         self.assessment = build_assessment()
@@ -422,3 +624,246 @@ def test_pdf_view_returns_404_for_unknown_case(self):
         response.status_code,
         404,
     )
+
+class EventFileParserTests(TestCase):
+    def setUp(self):
+        self.parser = EventFileParser(
+            max_upload_bytes=1024 * 1024,
+            max_parsed_characters=50_000,
+        )
+
+    def test_parse_text_file(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.log",
+            (
+                b"event=login_failure user=admin\n"
+                b"event=login_success user=admin\n"
+            ),
+            content_type="text/plain",
+        )
+
+        result = self.parser.parse(uploaded_file)
+
+        self.assertEqual(
+            result.filename,
+            "events.log",
+        )
+
+        self.assertEqual(
+            result.event_count,
+            2,
+        )
+
+        self.assertIn(
+            "login_failure",
+            result.text,
+        )
+
+    def test_parse_json_array(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.json",
+            (
+                b'[{"event": "login_failure"}, '
+                b'{"event": "login_success"}]'
+            ),
+            content_type="application/json",
+        )
+
+        result = self.parser.parse(uploaded_file)
+
+        self.assertEqual(
+            result.event_count,
+            2,
+        )
+
+        self.assertIn(
+            '"login_failure"',
+            result.text,
+        )
+
+    def test_parse_jsonl(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.jsonl",
+            (
+                b'{"event":"login_failure"}\n'
+                b'{"event":"login_success"}\n'
+            ),
+            content_type="application/json",
+        )
+
+        result = self.parser.parse(uploaded_file)
+
+        self.assertEqual(
+            result.event_count,
+            2,
+        )
+
+        self.assertEqual(
+            len(result.text.splitlines()),
+            2,
+        )
+
+    def test_parse_csv(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.csv",
+            (
+                b"timestamp,event,user\n"
+                b"2026-07-18T10:00:00Z,"
+                b"login_failure,admin\n"
+                b"2026-07-18T10:01:00Z,"
+                b"login_success,admin\n"
+            ),
+            content_type="text/csv",
+        )
+
+        result = self.parser.parse(uploaded_file)
+
+        self.assertEqual(
+            result.event_count,
+            2,
+        )
+
+        self.assertIn(
+            '"event": "login_failure"',
+            result.text,
+        )
+
+    def test_rejects_unsupported_extension(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.exe",
+            b"not an executable",
+            content_type="application/octet-stream",
+        )
+
+        with self.assertRaises(
+            EventFileValidationError
+        ):
+            self.parser.parse(uploaded_file)
+
+    def test_rejects_oversized_file(self):
+        parser = EventFileParser(
+            max_upload_bytes=10,
+        )
+
+        uploaded_file = SimpleUploadedFile(
+            "events.log",
+            b"this file is larger than ten bytes",
+            content_type="text/plain",
+        )
+
+        with self.assertRaises(
+            EventFileValidationError
+        ):
+            parser.parse(uploaded_file)
+
+    def test_rejects_binary_content(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.log",
+            b"event\x00binary",
+            content_type="text/plain",
+        )
+
+        with self.assertRaises(
+            EventFileValidationError
+        ):
+            self.parser.parse(uploaded_file)
+
+    def test_rejects_invalid_json(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.json",
+            b'{"event": invalid}',
+            content_type="application/json",
+        )
+
+        with self.assertRaises(
+            EventFileParseError
+        ):
+            self.parser.parse(uploaded_file)
+
+    def test_rejects_non_object_jsonl_record(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.jsonl",
+            b'{"event":"login"}\n["invalid"]\n',
+            content_type="application/json",
+        )
+
+        with self.assertRaises(
+            EventFileParseError
+        ):
+            self.parser.parse(uploaded_file)
+
+class IncidentAnalysisFormTests(TestCase):
+    def test_requires_input(self):
+        form = IncidentAnalysisForm(
+            data={},
+            files={},
+        )
+
+        self.assertFalse(
+            form.is_valid()
+        )
+
+        self.assertIn(
+            "Paste security events or upload an event file.",
+            form.non_field_errors(),
+        )
+
+    def test_accepts_pasted_events(self):
+        form = IncidentAnalysisForm(
+            data={
+                "security_events": (
+                    "event=login_failure user=admin"
+                ),
+            },
+        )
+
+        self.assertTrue(
+            form.is_valid(),
+            form.errors,
+        )
+
+    def test_accepts_uploaded_file(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.log",
+            b"event=login_failure user=admin",
+            content_type="text/plain",
+        )
+
+        form = IncidentAnalysisForm(
+            data={},
+            files={
+                "event_file": uploaded_file,
+            },
+        )
+
+        self.assertTrue(
+            form.is_valid(),
+            form.errors,
+        )
+
+    def test_rejects_paste_and_file_together(self):
+        uploaded_file = SimpleUploadedFile(
+            "events.log",
+            b"event=login_failure user=admin",
+            content_type="text/plain",
+        )
+
+        form = IncidentAnalysisForm(
+            data={
+                "security_events": (
+                    "event=login_success user=admin"
+                ),
+            },
+            files={
+                "event_file": uploaded_file,
+            },
+        )
+
+        self.assertFalse(
+            form.is_valid()
+        )
+
+        self.assertIn(
+            "Use one input method at a time",
+            str(form.non_field_errors()),
+        )

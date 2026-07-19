@@ -128,3 +128,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# ThreatLens security-event upload limits.
+THREATLENS_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+THREATLENS_MAX_PARSED_CHARACTERS = 200_000
+
+THREATLENS_ALLOWED_UPLOAD_EXTENSIONS = {
+    ".txt",
+    ".log",
+    ".json",
+    ".jsonl",
+    ".csv",
+}

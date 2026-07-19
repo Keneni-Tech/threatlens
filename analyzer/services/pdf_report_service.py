@@ -231,7 +231,51 @@ class InvestigationPDFReportService:
         affected_assets = self._string_list("affected_assets")
         affected_accounts = self._string_list("affected_accounts")
         indicators = self._string_list("indicators")
+        input_source = (
+            self.investigation.get_input_source_display()
+        )
 
+        source_filename = (
+            self.investigation.source_filename
+            or "Not applicable"
+        )
+
+        source_event_count = (
+            str(self.investigation.source_event_count)
+            if self.investigation.source_event_count is not None
+            else "Unknown"
+        )
+
+        [
+            self._paragraph(
+                "Input source",
+                "table_heading",
+            ),
+            self._paragraph(
+                input_source,
+                "table_body",
+            ),
+        ],
+        [
+            self._paragraph(
+                "Source filename",
+                "table_heading",
+            ),
+            self._paragraph(
+                source_filename,
+                "table_body",
+            ),
+        ],
+        [
+            self._paragraph(
+                "Parsed events",
+                "table_heading",
+            ),
+            self._paragraph(
+                source_event_count,
+                "table_body",
+            ),
+        ],
         rows = [
             [
                 self._paragraph("Affected assets", "table_heading"),

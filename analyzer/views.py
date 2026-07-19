@@ -29,6 +29,12 @@ from analyzer.services.pdf_report_service import (
     PDFReportError,
 )
 
+from analyzer.services.event_file_parser import (
+    EventFileParseError,
+    EventFileParser,
+    EventFileValidationError,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -68,18 +74,78 @@ def investigation_list(request: HttpRequest) -> HttpResponse:
         context,
     )
 
-
 @require_http_methods(["GET", "POST"])
-def investigation_create(request: HttpRequest) -> HttpResponse:
+def investigation_create(
+    request: HttpRequest,
+) -> HttpResponse:
     analysis_error = None
 
     if request.method == "POST":
-        form = IncidentAnalysisForm(request.POST)
+        form = IncidentAnalysisForm(
+            request.POST,
+            request.FILES,
+        )
 
         if form.is_valid():
-            security_events = form.cleaned_data["security_events"]
+            pasted_events = form.cleaned_data[
+                "security_events"
+            ]
+
+            uploaded_file = form.cleaned_data[
+                "event_file"
+            ]
+
+            input_source = (
+                Investigation.InputSource.PASTED
+            )
+
+            source_filename = ""
+            source_content_type = ""
+            source_size_bytes = None
+            source_event_count = None
 
             try:
+                if uploaded_file:
+                    parsed_file = EventFileParser().parse(
+                        uploaded_file
+                    )
+
+                    security_events = parsed_file.text
+
+                    input_source = (
+                        Investigation
+                        .InputSource
+                        .UPLOADED_FILE
+                    )
+
+                    source_filename = (
+                        parsed_file.filename
+                    )
+
+                    source_content_type = (
+                        parsed_file.content_type
+                    )
+
+                    source_size_bytes = (
+                        parsed_file.size_bytes
+                    )
+
+                    source_event_count = (
+                        parsed_file.event_count
+                    )
+
+                else:
+                    security_events = pasted_events
+
+                    source_event_count = len(
+                        [
+                            line
+                            for line
+                            in security_events.splitlines()
+                            if line.strip()
+                        ]
+                    )
+
                 analyzer = IncidentAnalyzer()
 
                 assessment = analyzer.analyze(
@@ -87,25 +153,47 @@ def investigation_create(request: HttpRequest) -> HttpResponse:
                 )
 
                 investigation = (
-                    InvestigationService.create_investigation(
+                    InvestigationService
+                    .create_investigation(
                         raw_events=security_events,
                         assessment=assessment,
+                        input_source=input_source,
+                        source_filename=source_filename,
+                        source_content_type=(
+                            source_content_type
+                        ),
+                        source_size_bytes=(
+                            source_size_bytes
+                        ),
+                        source_event_count=(
+                            source_event_count
+                        ),
                     )
                 )
 
                 return redirect(investigation)
+
+            except (
+                EventFileValidationError,
+                EventFileParseError,
+            ) as exc:
+                form.add_error(
+                    "event_file",
+                    str(exc),
+                )
 
             except IncidentAnalysisError as exc:
                 analysis_error = str(exc)
 
             except Exception:
                 logger.exception(
-                    "ThreatLens failed to save the investigation."
+                    "ThreatLens failed to create "
+                    "the investigation."
                 )
 
                 analysis_error = (
-                    "The analysis completed, but ThreatLens could not "
-                    "save the investigation."
+                    "ThreatLens could not complete and save "
+                    "the investigation."
                 )
 
     else:
@@ -122,7 +210,6 @@ def investigation_create(request: HttpRequest) -> HttpResponse:
         "analyzer/investigation_create.html",
         context,
     )
-
 
 @require_http_methods(["GET"])
 def investigation_detail(

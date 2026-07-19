@@ -40,11 +40,40 @@ class Investigation(models.Model):
         choices=Confidence.choices,
         db_index=True,
     )
+    class InputSource(models.TextChoices):
+        PASTED = "pasted", "Pasted text"
+        UPLOADED_FILE = "uploaded_file", "Uploaded file"
 
     summary = models.TextField()
 
     raw_events = models.TextField(
         help_text="Sanitized security-event data submitted for analysis.",
+    )
+    input_source = models.CharField(
+        max_length=20,
+        choices=InputSource.choices,
+        default=InputSource.PASTED,
+        db_index=True,
+    )
+
+    source_filename = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    source_content_type = models.CharField(
+        max_length=100,
+        blank=True,
+    )
+
+    source_size_bytes = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+    )
+
+    source_event_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
     )
 
     analysis = models.JSONField(
