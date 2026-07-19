@@ -4,7 +4,7 @@ from __future__ import annotations
 from django import forms
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
-
+from analyzer.models import Investigation
 
 SAMPLE_SECURITY_EVENTS = """2026-07-18T14:02:11Z host=web-server-01 event=login_failure user=administrator source_ip=198.51.100.24
 2026-07-18T14:02:18Z host=web-server-01 event=login_failure user=administrator source_ip=198.51.100.24
@@ -98,3 +98,81 @@ class IncidentAnalysisForm(forms.Form):
 
         return cleaned_data
     
+class InvestigationFilterForm(forms.Form):
+    class SortChoice:
+        NEWEST = "newest"
+        OLDEST = "oldest"
+        SEVERITY_DESC = "severity_desc"
+        SEVERITY_ASC = "severity_asc"
+        TITLE_ASC = "title_asc"
+
+    search = forms.CharField(
+        required=False,
+        label="Search investigations",
+        max_length=200,
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": (
+                    "Search title, summary, filename, assets, "
+                    "accounts, or indicators..."
+                ),
+                "autocomplete": "off",
+                "type": "search",
+            }
+        ),
+    )
+
+    severity = forms.ChoiceField(
+        required=False,
+        label="Severity",
+        choices=[
+            ("", "All severities"),
+            *Investigation.Severity.choices,
+        ],
+    )
+
+    confidence = forms.ChoiceField(
+        required=False,
+        label="Confidence",
+        choices=[
+            ("", "All confidence levels"),
+            *Investigation.Confidence.choices,
+        ],
+    )
+
+    input_source = forms.ChoiceField(
+        required=False,
+        label="Input source",
+        choices=[
+            ("", "All input sources"),
+            *Investigation.InputSource.choices,
+        ],
+    )
+
+    sort = forms.ChoiceField(
+        required=False,
+        label="Sort",
+        choices=[
+            (
+                SortChoice.NEWEST,
+                "Newest first",
+            ),
+            (
+                SortChoice.OLDEST,
+                "Oldest first",
+            ),
+            (
+                SortChoice.SEVERITY_DESC,
+                "Severity: highest first",
+            ),
+            (
+                SortChoice.SEVERITY_ASC,
+                "Severity: lowest first",
+            ),
+            (
+                SortChoice.TITLE_ASC,
+                "Title: A–Z",
+            ),
+        ],
+        initial=SortChoice.NEWEST,
+    )

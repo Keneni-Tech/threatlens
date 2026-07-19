@@ -22,36 +22,50 @@
 </head>
 
 <body>
-    <header class="site-header">
-        <div class="container header-content">
+<header class="site-header">
+    <div class="container header-content">
+        <a
+            class="brand"
+            href="{% url 'analyzer:investigation_list' %}"
+        >
+            <span class="brand-mark">
+                TL
+            </span>
+
+            <span class="brand-copy">
+                <strong>ThreatLens</strong>
+                <small>AI Incident Investigator</small>
+            </span>
+        </a>
+
+        <nav
+            class="navigation"
+            aria-label="Primary navigation"
+        >
             <a
-                class="brand"
+                class="{% if request.resolver_match.url_name == 'investigation_list' %}is-active{% endif %}"
                 href="{% url 'analyzer:investigation_list' %}"
             >
-                <span class="brand-mark">TL</span>
-
-                <span>
-                    <strong>ThreatLens</strong>
-                    <small>AI Incident Investigator</small>
-                </span>
+                Dashboard
             </a>
 
-            <nav class="navigation">
-                <a
-                    href="{% url 'analyzer:investigation_list' %}"
-                >
-                    Investigations
-                </a>
+            <a
+                class="{% if request.resolver_match.url_name == 'investigation_create' %}is-active{% endif %}"
+                href="{% url 'analyzer:investigation_create' %}"
+            >
+                Analyze
+            </a>
 
-                <a
-                    class="nav-button"
-                    href="{% url 'analyzer:investigation_create' %}"
-                >
-                    New investigation
-                </a>
-            </nav>
-        </div>
-    </header>
+            <a
+                class="nav-button"
+                href="{% url 'analyzer:investigation_create' %}"
+            >
+                <span aria-hidden="true">+</span>
+                New case
+            </a>
+        </nav>
+    </div>
+</header>
 
     <main class="container main-content">
         {% block content %}

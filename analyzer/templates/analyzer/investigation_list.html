@@ -1,127 +1,641 @@
 {% extends "analyzer/base.html" %}
 
 {% block title %}
-    Investigations | ThreatLens
+    Investigation Dashboard | ThreatLens
 {% endblock %}
 
 {% block content %}
-    <section class="page-heading">
-        <div>
+    <section class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+            <div class="status-line">
+                <span class="status-indicator"></span>
+
+                <span>
+                    AI-assisted investigation workspace
+                </span>
+            </div>
+
             <p class="eyebrow">
-                Investigation workspace
+                ThreatLens operations
             </p>
 
             <h1>
-                Security investigations
+                Turn event data into
+                <span>actionable intelligence.</span>
             </h1>
 
             <p class="hero-copy">
-                Review saved AI-assisted incident assessments,
-                evidence, timelines, and containment recommendations.
+                Analyze security events, preserve investigation
+                evidence, map activity to MITRE ATT&amp;CK, and
+                generate executive reports from one workspace.
             </p>
-        </div>
 
-        <a
-            class="primary-link-button"
-            href="{% url 'analyzer:investigation_create' %}"
-        >
-            + New investigation
-        </a>
-    </section>
+            <div class="hero-actions">
+                <a
+                    class="primary-link-button hero-primary-action"
+                    href="{% url 'analyzer:investigation_create' %}"
+                >
+                    <span aria-hidden="true">+</span>
+                    Start investigation
+                </a>
 
-    <section class="statistics-grid">
-        <article class="card statistic-card">
-            <span>Total investigations</span>
-            <strong>{{ total_investigations }}</strong>
-        </article>
-
-        <article class="card statistic-card">
-            <span>Critical</span>
-            <strong>{{ critical_count }}</strong>
-        </article>
-
-        <article class="card statistic-card">
-            <span>High</span>
-            <strong>{{ high_count }}</strong>
-        </article>
-
-        <article class="card statistic-card">
-            <span>Medium</span>
-            <strong>{{ medium_count }}</strong>
-        </article>
-    </section>
-
-    <section class="history-section">
-        <div class="section-heading">
-            <div>
-                <p class="step-label">
-                    Investigation history
-                </p>
-
-                <h2>Recent assessments</h2>
+                {% if recent_activity %}
+                    <a
+                        class="secondary-link-button"
+                        href="{{ recent_activity.0.get_absolute_url }}"
+                    >
+                        Open latest case
+                    </a>
+                {% endif %}
             </div>
         </div>
 
-        {% if investigations %}
-            <div class="investigation-list">
-                {% for investigation in investigations %}
-                    <a
-                        class="card investigation-row"
-                        href="{{ investigation.get_absolute_url }}"
-                    >
-                        <div class="investigation-main">
-                            <div class="assessment-labels">
-                                <span
-                                    class="severity-badge severity-{{ investigation.severity }}"
-                                >
-                                    {{ investigation.get_severity_display }}
-                                </span>
+        <aside class="hero-overview-card">
+            <div class="hero-overview-header">
+                <div>
+                    <p>Investigation posture</p>
+                    <strong>Current workspace</strong>
+                </div>
 
-                                <span class="confidence-badge">
-                                    {{ investigation.get_confidence_display }}
-                                    confidence
+                <span class="live-badge">
+                    Live
+                </span>
+            </div>
+
+            <div class="hero-overview-number">
+                {{ metrics.total }}
+            </div>
+
+            <p class="hero-overview-label">
+                Saved investigations
+            </p>
+
+            <div class="hero-overview-grid">
+                <div>
+                    <span>High priority</span>
+                    <strong>
+                        {{ metrics.high_priority }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>Last 7 days</span>
+                    <strong>
+                        {{ metrics.last_7_days }}
+                    </strong>
+                </div>
+
+                <div>
+                    <span>File uploads</span>
+                    <strong>
+                        {{ metrics.uploaded }}
+                    </strong>
+                </div>
+            </div>
+        </aside>
+    </section>
+
+    <section
+        class="dashboard-statistics"
+        aria-label="Investigation statistics"
+    >
+        <article class="metric-card metric-total">
+            <div class="metric-header">
+                <span>Total cases</span>
+                <span class="metric-icon">◎</span>
+            </div>
+
+            <strong>{{ metrics.total }}</strong>
+
+            <p>
+                All saved AI-assisted investigations
+            </p>
+        </article>
+
+        <article class="metric-card metric-critical">
+            <div class="metric-header">
+                <span>Critical</span>
+                <span class="metric-icon">!</span>
+            </div>
+
+            <strong>{{ metrics.critical }}</strong>
+
+            <p>
+                Cases requiring immediate review
+            </p>
+        </article>
+
+        <article class="metric-card metric-high">
+            <div class="metric-header">
+                <span>High severity</span>
+                <span class="metric-icon">↑</span>
+            </div>
+
+            <strong>{{ metrics.high }}</strong>
+
+            <p>
+                Cases with significant risk
+            </p>
+        </article>
+
+        <article class="metric-card metric-recent">
+            <div class="metric-header">
+                <span>Recent activity</span>
+                <span class="metric-icon">↻</span>
+            </div>
+
+            <strong>{{ metrics.last_7_days }}</strong>
+
+            <p>
+                Investigations created in seven days
+            </p>
+        </article>
+    </section>
+
+    <section class="dashboard-insights-grid">
+        <article class="dashboard-panel severity-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="step-label">
+                        Risk posture
+                    </p>
+
+                    <h2>
+                        Severity distribution
+                    </h2>
+                </div>
+
+                <span class="panel-total">
+                    {{ metrics.total }} total
+                </span>
+            </div>
+
+            {% if metrics.total %}
+                <div class="severity-visualization">
+                    {% for metric in metrics.severity_distribution %}
+                        <div class="severity-chart-row">
+                            <div class="severity-chart-label">
+                                <span
+                                    class="severity-dot severity-dot-{{ metric.value }}"
+                                ></span>
+
+                                <span>{{ metric.label }}</span>
+                            </div>
+
+                            <div
+                                class="severity-track"
+                                aria-label="{{ metric.label }}: {{ metric.count }}"
+                            >
+                                <span
+                                    class="severity-fill severity-fill-{{ metric.value }}"
+                                    style="width: {{ metric.percentage }}%;"
+                                ></span>
+                            </div>
+
+                            <div class="severity-chart-value">
+                                <strong>
+                                    {{ metric.count }}
+                                </strong>
+
+                                <span>
+                                    {{ metric.percentage }}%
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="panel-empty-state">
+                    <p>
+                        Severity data will appear after the first
+                        investigation is saved.
+                    </p>
+                </div>
+            {% endif %}
+        </article>
+
+        <article class="dashboard-panel source-panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="step-label">
+                        Data intake
+                    </p>
+
+                    <h2>
+                        Input sources
+                    </h2>
+                </div>
+            </div>
+
+            <div class="source-overview">
+                <div class="source-overview-item">
+                    <div class="source-overview-icon">
+                        ↑
+                    </div>
+
+                    <div>
+                        <span>Uploaded files</span>
+                        <strong>
+                            {{ metrics.uploaded }}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="source-overview-item">
+                    <div class="source-overview-icon">
+                        ≡
+                    </div>
+
+                    <div>
+                        <span>Pasted events</span>
+                        <strong>
+                            {{ metrics.pasted }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="capability-note">
+                <span class="capability-note-icon">
+                    ✓
+                </span>
+
+                <p>
+                    ThreatLens supports TXT, LOG, JSON,
+                    JSONL, and CSV security-event files.
+                </p>
+            </div>
+        </article>
+    </section>
+
+    <section class="investigation-workspace">
+        <div class="workspace-heading">
+            <div>
+                <p class="step-label">
+                    Case management
+                </p>
+
+                <h2>
+                    Investigations
+                </h2>
+
+                <p>
+                    Search, filter, and review saved cases.
+                </p>
+            </div>
+
+            <div class="result-summary">
+                <strong>{{ result_count }}</strong>
+
+                <span>
+                    result{{ result_count|pluralize }}
+                </span>
+            </div>
+        </div>
+
+        <form
+            class="investigation-filter-bar"
+            method="get"
+            action="{% url 'analyzer:investigation_list' %}"
+        >
+            <div class="dashboard-search-field">
+                <label
+                    class="sr-only"
+                    for="{{ filter_form.search.id_for_label }}"
+                >
+                    Search investigations
+                </label>
+
+                <span
+                    class="search-icon"
+                    aria-hidden="true"
+                >
+                    ⌕
+                </span>
+
+                {{ filter_form.search }}
+            </div>
+
+            <div class="filter-field">
+                <label
+                    class="sr-only"
+                    for="{{ filter_form.severity.id_for_label }}"
+                >
+                    Severity
+                </label>
+
+                {{ filter_form.severity }}
+            </div>
+
+            <div class="filter-field">
+                <label
+                    class="sr-only"
+                    for="{{ filter_form.confidence.id_for_label }}"
+                >
+                    Confidence
+                </label>
+
+                {{ filter_form.confidence }}
+            </div>
+
+            <div class="filter-field">
+                <label
+                    class="sr-only"
+                    for="{{ filter_form.input_source.id_for_label }}"
+                >
+                    Input source
+                </label>
+
+                {{ filter_form.input_source }}
+            </div>
+
+            <div class="filter-field">
+                <label
+                    class="sr-only"
+                    for="{{ filter_form.sort.id_for_label }}"
+                >
+                    Sort investigations
+                </label>
+
+                {{ filter_form.sort }}
+            </div>
+
+            <button
+                class="filter-submit-button"
+                type="submit"
+            >
+                Apply
+            </button>
+
+            {% if active_filter_count %}
+                <a
+                    class="clear-filter-button"
+                    href="{% url 'analyzer:investigation_list' %}"
+                >
+                    Clear
+                    <span>
+                        {{ active_filter_count }}
+                    </span>
+                </a>
+            {% endif %}
+        </form>
+
+        {% if filter_form.errors %}
+            <div class="filter-error-message">
+                One or more dashboard filters were invalid and
+                were ignored.
+            </div>
+        {% endif %}
+
+        {% if investigations %}
+            <div class="dashboard-investigation-list">
+                {% for investigation in investigations %}
+                    <article class="dashboard-investigation-card">
+                        <a
+                            class="investigation-card-main-link"
+                            href="{{ investigation.get_absolute_url }}"
+                        >
+                            <div class="investigation-card-topline">
+                                <div class="assessment-labels">
+                                    <span
+                                        class="severity-badge severity-{{ investigation.severity }}"
+                                    >
+                                        {{ investigation.get_severity_display }}
+                                    </span>
+
+                                    <span class="confidence-badge">
+                                        {{ investigation.get_confidence_display }}
+                                        confidence
+                                    </span>
+                                </div>
+
+                                <span class="case-identifier">
+                                    Case {{ investigation.short_case_id }}
                                 </span>
                             </div>
 
-                            <h3>{{ investigation.title }}</h3>
+                            <h3>
+                                {{ investigation.title }}
+                            </h3>
+
+                            <p class="investigation-card-summary">
+                                {{ investigation.summary|truncatechars:220 }}
+                            </p>
+
+                            <div class="investigation-card-metadata">
+                                <span>
+                                    <strong>Source</strong>
+                                    {{ investigation.display_source_name }}
+                                </span>
+
+                                {% if investigation.source_event_count is not None %}
+                                    <span>
+                                        <strong>Events</strong>
+                                        {{ investigation.source_event_count }}
+                                    </span>
+                                {% endif %}
+
+                                <span>
+                                    <strong>Created</strong>
+                                    {{ investigation.created_at|date:"M j, Y" }}
+                                </span>
+
+                                <span>
+                                    {{ investigation.created_at|time:"g:i A" }}
+                                </span>
+                            </div>
+                        </a>
+
+                        <div class="investigation-card-actions">
+                            <a
+                                href="{{ investigation.get_absolute_url }}"
+                            >
+                                Open case
+                                <span aria-hidden="true">→</span>
+                            </a>
+
+                            <a
+                                href="{% url 'analyzer:investigation_pdf' investigation.id %}"
+                            >
+                                PDF
+                                <span aria-hidden="true">↓</span>
+                            </a>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+
+            {% if page_obj.paginator.num_pages > 1 %}
+                <nav
+                    class="pagination"
+                    aria-label="Investigation pages"
+                >
+                    <div class="pagination-summary">
+                        Page {{ page_obj.number }}
+                        of {{ page_obj.paginator.num_pages }}
+                    </div>
+
+                    <div class="pagination-links">
+                        {% if page_obj.has_previous %}
+                            <a
+                                href="{% querystring page=1 %}"
+                                aria-label="First page"
+                            >
+                                «
+                            </a>
+
+                            <a
+                                href="{% querystring page=page_obj.previous_page_number %}"
+                            >
+                                Previous
+                            </a>
+                        {% else %}
+                            <span
+                                class="pagination-disabled"
+                                aria-hidden="true"
+                            >
+                                «
+                            </span>
+
+                            <span
+                                class="pagination-disabled"
+                            >
+                                Previous
+                            </span>
+                        {% endif %}
+
+                        <span class="pagination-current">
+                            {{ page_obj.number }}
+                        </span>
+
+                        {% if page_obj.has_next %}
+                            <a
+                                href="{% querystring page=page_obj.next_page_number %}"
+                            >
+                                Next
+                            </a>
+
+                            <a
+                                href="{% querystring page=page_obj.paginator.num_pages %}"
+                                aria-label="Last page"
+                            >
+                                »
+                            </a>
+                        {% else %}
+                            <span
+                                class="pagination-disabled"
+                            >
+                                Next
+                            </span>
+
+                            <span
+                                class="pagination-disabled"
+                                aria-hidden="true"
+                            >
+                                »
+                            </span>
+                        {% endif %}
+                    </div>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="dashboard-empty-state">
+                <div class="dashboard-empty-icon">
+                    TL
+                </div>
+
+                {% if active_filter_count %}
+                    <p class="step-label">
+                        No matching cases
+                    </p>
+
+                    <h3>
+                        No investigations match these filters.
+                    </h3>
+
+                    <p>
+                        Change your search or clear the active
+                        filters to review all saved cases.
+                    </p>
+
+                    <a
+                        class="secondary-link-button"
+                        href="{% url 'analyzer:investigation_list' %}"
+                    >
+                        Clear filters
+                    </a>
+                {% else %}
+                    <p class="step-label">
+                        Workspace ready
+                    </p>
+
+                    <h3>
+                        Create your first investigation.
+                    </h3>
+
+                    <p>
+                        Paste sanitized events or upload a supported
+                        security-event file to begin.
+                    </p>
+
+                    <a
+                        class="primary-link-button"
+                        href="{% url 'analyzer:investigation_create' %}"
+                    >
+                        Start investigation
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
+
+    {% if recent_activity %}
+        <section class="recent-activity-section">
+            <div class="workspace-heading">
+                <div>
+                    <p class="step-label">
+                        Timeline
+                    </p>
+
+                    <h2>
+                        Recent activity
+                    </h2>
+
+                    <p>
+                        The latest investigations saved in ThreatLens.
+                    </p>
+                </div>
+            </div>
+
+            <div class="activity-timeline">
+                {% for investigation in recent_activity %}
+                    <a
+                        class="activity-item"
+                        href="{{ investigation.get_absolute_url }}"
+                    >
+                        <span
+                            class="activity-marker severity-dot-{{ investigation.severity }}"
+                        ></span>
+
+                        <div class="activity-content">
+                            <div>
+                                <strong>
+                                    {{ investigation.title }}
+                                </strong>
+
+                                <span>
+                                    {{ investigation.get_severity_display }}
+                                </span>
+                            </div>
 
                             <p>
-                                {{ investigation.summary|truncatechars:180 }}
+                                {{ investigation.created_at|timesince }}
+                                ago
                             </p>
-                        </div>
-
-                        <div class="investigation-meta">
-                            <time
-                                datetime="{{ investigation.created_at|date:'c' }}"
-                            >
-                                {{ investigation.created_at|date:"M j, Y" }}
-                            </time>
-
-                            <span>
-                                {{ investigation.created_at|time:"g:i A" }}
-                            </span>
                         </div>
                     </a>
                 {% endfor %}
             </div>
-        {% else %}
-            <div class="card empty-state">
-                <div class="empty-icon">TL</div>
-
-                <h3>No investigations yet</h3>
-
-                <p>
-                    Submit sanitized security events to create your
-                    first AI-assisted investigation.
-                </p>
-
-                <a
-                    class="primary-link-button"
-                    href="{% url 'analyzer:investigation_create' %}"
-                >
-                    Create first investigation
-                </a>
-            </div>
-        {% endif %}
-    </section>
+        </section>
+    {% endif %}
 {% endblock %}

@@ -8,12 +8,10 @@ from django.http import FileResponse
 
 import logging
 
-from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from analyzer.forms import IncidentAnalysisForm, SAMPLE_SECURITY_EVENTS
 from analyzer.models import Investigation
 from analyzer.services.incident_analyzer import (
     IncidentAnalysisError,
@@ -22,6 +20,8 @@ from analyzer.services.incident_analyzer import (
 from analyzer.services.investigation_service import (
     InvestigationService,
 )
+
+from django.core.paginator import Paginator
 
 
 from analyzer.services.pdf_report_service import (
@@ -34,38 +34,89 @@ from analyzer.services.event_file_parser import (
     EventFileParser,
     EventFileValidationError,
 )
+from analyzer.forms import (
+    IncidentAnalysisForm,
+    InvestigationFilterForm,
+    SAMPLE_SECURITY_EVENTS,
+)
+from analyzer.services.dashboard_service import (
+    InvestigationDashboardService,
+)
 
 logger = logging.getLogger(__name__)
 
 
 @require_http_methods(["GET"])
-def investigation_list(request: HttpRequest) -> HttpResponse:
-    investigations = Investigation.objects.all()
+def investigation_list(
+    request: HttpRequest,
+) -> HttpResponse:
+    filter_form = InvestigationFilterForm(
+        request.GET or None
+    )
 
-    severity_counts = {
-        item["severity"]: item["total"]
-        for item in (
-            Investigation.objects
-            .values("severity")
-            .annotate(total=Count("id"))
+    if filter_form.is_valid():
+        cleaned_filters = (
+            filter_form.cleaned_data
         )
-    }
+    else:
+        cleaned_filters = {}
+
+    investigations = (
+        InvestigationDashboardService
+        .build_queryset(
+            cleaned_filters=cleaned_filters,
+        )
+    )
+
+    metrics = (
+        InvestigationDashboardService
+        .build_metrics()
+    )
+
+    paginator = Paginator(
+        investigations,
+        8,
+    )
+
+    page_obj = paginator.get_page(
+        request.GET.get("page")
+    )
+
+    active_filter_count = sum(
+        bool(cleaned_filters.get(field))
+        for field in (
+            "search",
+            "severity",
+            "confidence",
+            "input_source",
+        )
+    )
+
+    selected_sort = (
+        cleaned_filters.get("sort")
+        or InvestigationFilterForm
+        .SortChoice
+        .NEWEST
+    )
 
     context = {
-        "investigations": investigations,
-        "total_investigations": investigations.count(),
-        "critical_count": severity_counts.get(
-            Investigation.Severity.CRITICAL,
-            0,
+        "filter_form": filter_form,
+        "page_obj": page_obj,
+        "investigations": (
+            page_obj.object_list
         ),
-        "high_count": severity_counts.get(
-            Investigation.Severity.HIGH,
-            0,
+        "metrics": metrics,
+        "recent_activity": (
+            InvestigationDashboardService
+            .get_recent_activity(
+                limit=5,
+            )
         ),
-        "medium_count": severity_counts.get(
-            Investigation.Severity.MEDIUM,
-            0,
+        "active_filter_count": (
+            active_filter_count
         ),
+        "selected_sort": selected_sort,
+        "result_count": paginator.count,
     }
 
     return render(

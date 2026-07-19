@@ -23,8 +23,33 @@ ThreatLens helps security analysts transform raw security events into structured
 - Reject oversized, binary, malformed, and unsupported uploads
 - Preserve investigation input provenance and parsed event counts
 - Generate downloadable executive PDF reports
+- Competition-ready security investigation dashboard
+- Severity and investigation-posture metrics
+- Visual severity distribution
+- Full-text investigation search
+- Severity, confidence, and input-source filtering
+- Severity, date, and title sorting
+- Paginated investigation history
+- Recent investigation activity
+- Responsive dashboard design
 
 ---
+
+## Investigation Dashboard
+
+The ThreatLens dashboard summarizes saved investigations and provides:
+
+- total and high-priority case counts
+- severity distribution
+- recent activity
+- file-upload and pasted-input totals
+- search across titles, summaries, source files, structured analysis,
+  and raw event data
+- severity, confidence, and input-source filters
+- stable paginated investigation history
+
+The dashboard uses Django server-side filtering and pagination and does
+not require a JavaScript frontend framework.
 
 ## Technology Stack
 

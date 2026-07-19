@@ -33,6 +33,14 @@ from analyzer.services.event_file_parser import (
     EventFileValidationError,
 )
 
+from datetime import timedelta
+
+from django.utils import timezone
+
+from analyzer.forms import InvestigationFilterForm
+from analyzer.services.dashboard_service import (
+    InvestigationDashboardService,
+)
 
 def build_assessment() -> IncidentAssessment:
     return IncidentAssessment(
@@ -93,7 +101,41 @@ def build_assessment() -> IncidentAssessment:
             "The available event dataset is limited.",
         ],
     )
-
+def create_investigation(
+    *,
+    title: str,
+    severity: str,
+    confidence: str = Investigation.Confidence.HIGH,
+    summary: str = "Example security investigation.",
+    raw_events: str = "event=example",
+    input_source: str = Investigation.InputSource.PASTED,
+    source_filename: str = "",
+) -> Investigation:
+    return Investigation.objects.create(
+        title=title,
+        severity=severity,
+        confidence=confidence,
+        summary=summary,
+        raw_events=raw_events,
+        input_source=input_source,
+        source_filename=source_filename,
+        analysis={
+            "title": title,
+            "severity": severity,
+            "confidence": confidence,
+            "summary": summary,
+            "timeline": [],
+            "evidence": [],
+            "possible_attack_path": [],
+            "mitre_attack": [],
+            "affected_assets": [],
+            "affected_accounts": [],
+            "indicators": [],
+            "investigation_steps": [],
+            "containment_actions": [],
+            "limitations": [],
+        },
+    )
 
 class InvestigationModelTests(TestCase):
     def test_get_absolute_url(self):
@@ -866,4 +908,288 @@ class IncidentAnalysisFormTests(TestCase):
         self.assertIn(
             "Use one input method at a time",
             str(form.non_field_errors()),
+        )
+class InvestigationFilterFormTests(TestCase):
+    def test_default_filter_form_is_valid(self):
+        form = InvestigationFilterForm(
+            data={}
+        )
+
+        self.assertTrue(
+            form.is_valid(),
+            form.errors,
+        )
+
+    def test_rejects_invalid_severity(self):
+        form = InvestigationFilterForm(
+            data={
+                "severity": "extreme",
+            }
+        )
+
+        self.assertFalse(
+            form.is_valid()
+        )
+
+        self.assertIn(
+            "severity",
+            form.errors,
+        )
+
+    def test_rejects_invalid_sort_option(self):
+        form = InvestigationFilterForm(
+            data={
+                "sort": "unknown",
+            }
+        )
+
+        self.assertFalse(
+            form.is_valid()
+        )
+
+        self.assertIn(
+            "sort",
+            form.errors,
+        )
+
+
+class InvestigationDashboardServiceTests(TestCase):
+    def setUp(self):
+        self.critical = create_investigation(
+            title="Critical account compromise",
+            severity=(
+                Investigation.Severity.CRITICAL
+            ),
+            summary=(
+                "Administrator account compromise "
+                "from suspicious source."
+            ),
+            raw_events=(
+                "user=administrator "
+                "source_ip=198.51.100.24"
+            ),
+        )
+
+        self.high = create_investigation(
+            title="PowerShell execution",
+            severity=(
+                Investigation.Severity.HIGH
+            ),
+            confidence=(
+                Investigation.Confidence.MEDIUM
+            ),
+            input_source=(
+                Investigation
+                .InputSource
+                .UPLOADED_FILE
+            ),
+            source_filename="powershell-events.json",
+        )
+
+        self.low = create_investigation(
+            title="Routine service login",
+            severity=(
+                Investigation.Severity.LOW
+            ),
+            confidence=(
+                Investigation.Confidence.LOW
+            ),
+        )
+
+    def test_metrics_count_severities(self):
+        metrics = (
+            InvestigationDashboardService
+            .build_metrics()
+        )
+
+        self.assertEqual(
+            metrics.total,
+            3,
+        )
+
+        self.assertEqual(
+            metrics.critical,
+            1,
+        )
+
+        self.assertEqual(
+            metrics.high,
+            1,
+        )
+
+        self.assertEqual(
+            metrics.low,
+            1,
+        )
+
+        self.assertEqual(
+            metrics.high_priority,
+            2,
+        )
+
+    def test_metrics_count_input_sources(self):
+        metrics = (
+            InvestigationDashboardService
+            .build_metrics()
+        )
+
+        self.assertEqual(
+            metrics.uploaded,
+            1,
+        )
+
+        self.assertEqual(
+            metrics.pasted,
+            2,
+        )
+
+    def test_search_matches_title(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "search": "PowerShell",
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [self.high],
+        )
+
+    def test_search_matches_raw_events(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "search": "198.51.100.24",
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [self.critical],
+        )
+
+    def test_filter_by_severity(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "severity": (
+                        Investigation
+                        .Severity
+                        .CRITICAL
+                    ),
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [self.critical],
+        )
+
+    def test_filter_by_confidence(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "confidence": (
+                        Investigation
+                        .Confidence
+                        .MEDIUM
+                    ),
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [self.high],
+        )
+
+    def test_filter_by_uploaded_source(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "input_source": (
+                        Investigation
+                        .InputSource
+                        .UPLOADED_FILE
+                    ),
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [self.high],
+        )
+
+    def test_sort_highest_severity_first(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "sort": (
+                        InvestigationFilterForm
+                        .SortChoice
+                        .SEVERITY_DESC
+                    ),
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [
+                self.critical,
+                self.high,
+                self.low,
+            ],
+        )
+
+    def test_sort_lowest_severity_first(self):
+        queryset = (
+            InvestigationDashboardService
+            .build_queryset(
+                cleaned_filters={
+                    "sort": (
+                        InvestigationFilterForm
+                        .SortChoice
+                        .SEVERITY_ASC
+                    ),
+                }
+            )
+        )
+
+        self.assertEqual(
+            list(queryset),
+            [
+                self.low,
+                self.high,
+                self.critical,
+            ],
+        )
+
+    def test_severity_percentages_total_one_hundred(self):
+        metrics = (
+            InvestigationDashboardService
+            .build_metrics()
+        )
+
+        total_percentage = sum(
+            item.percentage
+            for item
+            in metrics.severity_distribution
+        )
+
+        self.assertAlmostEqual(
+            total_percentage,
+            100.0,
+            places=1,
         )

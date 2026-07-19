@@ -110,3 +110,19 @@ class Investigation(models.Model):
             "analyzer:investigation_detail",
             kwargs={"investigation_id": self.id},
         )
+    
+    @property
+    def display_source_name(self) -> str:
+        if (
+            self.input_source
+            == self.InputSource.UPLOADED_FILE
+            and self.source_filename
+        ):
+            return self.source_filename
+
+        return self.get_input_source_display()
+
+
+    @property
+    def short_case_id(self) -> str:
+        return str(self.id).split("-")[0].upper()
