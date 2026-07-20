@@ -8,6 +8,8 @@
 [![Django 6](https://img.shields.io/badge/Django-6.0-092E20.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Keneni-Tech/threatlens)
+
 ThreatLens turns sanitized security events into structured, saved, and
 reportable incident assessments. It helps analysts organize evidence
 quickly while keeping a human responsible for every conclusion and
