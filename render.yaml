@@ -9,7 +9,7 @@ services:
       pip install -r requirements.txt
     startCommand: bash start.sh
     healthCheckPath: /health/
-    autoDeployTrigger: off
+    autoDeployTrigger: "off"
     envVars:
       - key: DJANGO_SECRET_KEY
         generateValue: true
