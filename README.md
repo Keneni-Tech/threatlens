@@ -9,8 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ThreatLens turns sanitized security events into structured, saved, and
-reportable incident assessments. It is an OpenAI Build Week 2026
-Developer Tools submission designed to help analysts organize evidence
+reportable incident assessments. It helps analysts organize evidence
 quickly while keeping a human responsible for every conclusion and
 response action.
 
@@ -134,21 +133,16 @@ Open:
 
 Sample event files are available in [`samples/`](samples/).
 
-## Guided demo
+## Demo mode
 
-With `THREATLENS_DEMO_MODE=True`, select **Run guided demo** on the
-dashboard or run:
+ThreatLens includes a fictional demonstration case for evaluating the
+complete investigation and reporting workflow without an OpenAI API
+request. With `THREATLENS_DEMO_MODE=True`, select **Run guided demo** on
+the dashboard or run:
 
 ```bash
 python manage.py seed_demo
 ```
-
-The command is idempotent: it creates the fictional demonstration case
-once and reports the existing case on subsequent runs. It does not call
-OpenAI or consume API credits.
-
-See the [three-to-four-minute demo script](docs/DEMO_SCRIPT.md) and
-[screenshot checklist](docs/SCREENSHOTS.md).
 
 ## Configuration
 
@@ -211,8 +205,6 @@ single-user environment with sanitized data. See the complete
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Deployment checklist](docs/DEPLOYMENT.md)
-- [Demonstration script](docs/DEMO_SCRIPT.md)
-- [Screenshot checklist](docs/SCREENSHOTS.md)
 - [Sample event guide](samples/README.md)
 - [Roadmap](ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
