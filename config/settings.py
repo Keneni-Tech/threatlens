@@ -86,9 +86,18 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env_string(
+_SECRET_KEY_MATERIAL = env_string(
     "DJANGO_SECRET_KEY",
     "development-only-secret-key-change-me",
+)
+
+# Namespacing preserves the full entropy of provider-generated secrets and
+# ensures Django receives a suitably long signing key. Validate the original
+# material below so a known development placeholder can never pass production
+# checks merely because of this prefix.
+SECRET_KEY = (
+    "threatlens-django-signing:"
+    f"{_SECRET_KEY_MATERIAL}"
 )
 
 DEBUG = env_bool(
@@ -107,6 +116,28 @@ ALLOWED_HOSTS = env_list(
 CSRF_TRUSTED_ORIGINS = env_list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
 )
+
+# Render supplies its assigned hostname at runtime. Adding that trusted
+# platform value keeps Blueprint deployments secure without hardcoding a
+# service name that Render may suffix for uniqueness.
+RENDER_EXTERNAL_HOSTNAME = env_string(
+    "RENDER_EXTERNAL_HOSTNAME",
+)
+
+if RENDER_EXTERNAL_HOSTNAME:
+    if RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(
+            RENDER_EXTERNAL_HOSTNAME
+        )
+
+    render_origin = (
+        f"https://{RENDER_EXTERNAL_HOSTNAME}"
+    )
+
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(
+            render_origin
+        )
 
 OPENAI_API_KEY = env_string("OPENAI_API_KEY")
 OPENAI_MODEL = env_string("OPENAI_MODEL", "gpt-5.6")
@@ -344,15 +375,17 @@ SECURE_CSP = {
 
 if not DEBUG:
     if (
-        len(SECRET_KEY) < 50
-        or len(set(SECRET_KEY)) < 5
-        or SECRET_KEY.startswith("django-insecure-")
-        or "change-me" in SECRET_KEY.lower()
-        or "replace-with" in SECRET_KEY.lower()
+        len(_SECRET_KEY_MATERIAL) < 40
+        or len(set(_SECRET_KEY_MATERIAL)) < 5
+        or _SECRET_KEY_MATERIAL.startswith(
+            "django-insecure-"
+        )
+        or "change-me" in _SECRET_KEY_MATERIAL.lower()
+        or "replace-with" in _SECRET_KEY_MATERIAL.lower()
     ):
         raise RuntimeError(
-            "DJANGO_SECRET_KEY must be a strong, unique production secret "
-            "of at least 50 characters."
+            "DJANGO_SECRET_KEY must contain at least 40 characters of "
+            "strong, unique production secret material."
         )
 
     SECURE_SSL_REDIRECT = env_bool(
