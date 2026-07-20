@@ -1,9 +1,9 @@
-
 from __future__ import annotations
 
 from django import forms
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
+
 from analyzer.models import Investigation
 
 SAMPLE_SECURITY_EVENTS = """2026-07-18T14:02:11Z host=web-server-01 event=login_failure user=administrator source_ip=198.51.100.24
@@ -27,6 +27,10 @@ class IncidentAnalysisForm(forms.Form):
                 ),
                 "spellcheck": "false",
                 "autocomplete": "off",
+                "aria-describedby": (
+                    "security-events-guidance "
+                    "security-events-errors"
+                ),
             }
         ),
     )
@@ -40,12 +44,27 @@ class IncidentAnalysisForm(forms.Form):
                     ".txt,.log,.json,.jsonl,.csv,"
                     "text/plain,application/json,text/csv"
                 ),
+                "aria-describedby": (
+                    "event-file-guidance event-file-errors"
+                ),
             }
         ),
         help_text=(
             "Supported types: TXT, LOG, JSON, JSONL, and CSV."
         ),
     )
+
+    def add_error(
+        self,
+        field: str | None,
+        error,
+    ) -> None:
+        super().add_error(field, error)
+
+        if field is not None and field in self.fields:
+            self.fields[field].widget.attrs[
+                "aria-invalid"
+            ] = "true"
 
     def clean_event_file(
         self,
@@ -73,7 +92,27 @@ class IncidentAnalysisForm(forms.Form):
 
         return uploaded_file
 
-    def clean(self):
+    def clean_security_events(self) -> str:
+        security_events = (
+            self.cleaned_data.get("security_events")
+            or ""
+        ).strip()
+
+        maximum_characters = getattr(
+            settings,
+            "THREATLENS_MAX_INPUT_CHARACTERS",
+            30_000,
+        )
+
+        if len(security_events) > maximum_characters:
+            raise forms.ValidationError(
+                "The pasted event data exceeds the "
+                f"{maximum_characters:,}-character limit."
+            )
+
+        return security_events
+
+    def clean(self) -> dict:
         cleaned_data = super().clean()
 
         security_events = (
@@ -97,7 +136,8 @@ class IncidentAnalysisForm(forms.Form):
         cleaned_data["security_events"] = security_events
 
         return cleaned_data
-    
+
+
 class InvestigationFilterForm(forms.Form):
     class SortChoice:
         NEWEST = "newest"

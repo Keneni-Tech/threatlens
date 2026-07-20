@@ -1,0 +1,38 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    Unexpected Error | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section
+        class="application-error-page"
+        aria-labelledby="error-title"
+    >
+        <p class="error-status-code">500</p>
+
+        <p class="eyebrow">
+            Unexpected application error
+        </p>
+
+        <h1 id="error-title">
+            ThreatLens encountered an unexpected problem.
+        </h1>
+
+        <p>
+            Your saved investigations remain available. Return to
+            the dashboard and try the action again.
+        </p>
+
+        <p class="error-reference">
+            Reference ID: {{ request_id }}
+        </p>
+
+        <a
+            class="primary-link-button"
+            href="{% url 'analyzer:investigation_list' %}"
+        >
+            Return to dashboard
+        </a>
+    </section>
+{% endblock %}

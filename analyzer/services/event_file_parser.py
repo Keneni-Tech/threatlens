@@ -220,6 +220,11 @@ class EventFileParser:
                 "The uploaded file must have a valid filename."
             )
 
+        if len(filename) > 255:
+            raise EventFileValidationError(
+                "The uploaded filename must be 255 characters or fewer."
+            )
+
         extension = Path(filename).suffix.lower()
 
         if extension not in self.allowed_extensions:
@@ -253,7 +258,9 @@ class EventFileParser:
         allowed_content_types: set[str],
         extension: str,
     ) -> None:
-        if content_type not in allowed_content_types:
+        media_type = content_type.partition(";")[0].strip()
+
+        if media_type not in allowed_content_types:
             raise EventFileValidationError(
                 f"The reported content type '{content_type}' "
                 f"does not match a supported {extension} file."

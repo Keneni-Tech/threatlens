@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest an incremental improvement to ThreatLens.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: analyst_problem
+    attributes:
+      label: Analyst problem
+      description: What investigation problem should this solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Describe the smallest useful change.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and data-handling impact
+      description: Note new inputs, stored data, external services, or permissions.
+    validations:
+      required: true

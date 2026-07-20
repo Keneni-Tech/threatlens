@@ -39,6 +39,24 @@
                     Start investigation
                 </a>
 
+                {% if demo_mode_enabled %}
+                    <form
+                        class="demo-form"
+                        method="post"
+                        action="{% url 'analyzer:create_demo_investigation' %}"
+                    >
+                        {% csrf_token %}
+
+                        <button
+                            class="demo-case-button"
+                            type="submit"
+                        >
+                            <span aria-hidden="true">▶</span>
+                            Run guided demo
+                        </button>
+                    </form>
+                {% endif %}
+
                 {% if recent_activity %}
                     <a
                         class="secondary-link-button"
@@ -102,7 +120,12 @@
         <article class="metric-card metric-total">
             <div class="metric-header">
                 <span>Total cases</span>
-                <span class="metric-icon">◎</span>
+                <span
+                    class="metric-icon"
+                    aria-hidden="true"
+                >
+                    ◎
+                </span>
             </div>
 
             <strong>{{ metrics.total }}</strong>
@@ -115,7 +138,12 @@
         <article class="metric-card metric-critical">
             <div class="metric-header">
                 <span>Critical</span>
-                <span class="metric-icon">!</span>
+                <span
+                    class="metric-icon"
+                    aria-hidden="true"
+                >
+                    !
+                </span>
             </div>
 
             <strong>{{ metrics.critical }}</strong>
@@ -128,7 +156,12 @@
         <article class="metric-card metric-high">
             <div class="metric-header">
                 <span>High severity</span>
-                <span class="metric-icon">↑</span>
+                <span
+                    class="metric-icon"
+                    aria-hidden="true"
+                >
+                    ↑
+                </span>
             </div>
 
             <strong>{{ metrics.high }}</strong>
@@ -141,7 +174,12 @@
         <article class="metric-card metric-recent">
             <div class="metric-header">
                 <span>Recent activity</span>
-                <span class="metric-icon">↻</span>
+                <span
+                    class="metric-icon"
+                    aria-hidden="true"
+                >
+                    ↻
+                </span>
             </div>
 
             <strong>{{ metrics.last_7_days }}</strong>
@@ -182,15 +220,14 @@
                                 <span>{{ metric.label }}</span>
                             </div>
 
-                            <div
-                                class="severity-track"
+                            <progress
+                                class="severity-track severity-track-{{ metric.value }}"
                                 aria-label="{{ metric.label }}: {{ metric.count }}"
+                                max="100"
+                                value="{{ metric.percentage }}"
                             >
-                                <span
-                                    class="severity-fill severity-fill-{{ metric.value }}"
-                                    style="width: {{ metric.percentage }}%;"
-                                ></span>
-                            </div>
+                                {{ metric.percentage }}%
+                            </progress>
 
                             <div class="severity-chart-value">
                                 <strong>
@@ -229,7 +266,10 @@
 
             <div class="source-overview">
                 <div class="source-overview-item">
-                    <div class="source-overview-icon">
+                    <div
+                        class="source-overview-icon"
+                        aria-hidden="true"
+                    >
                         ↑
                     </div>
 
@@ -242,7 +282,10 @@
                 </div>
 
                 <div class="source-overview-item">
-                    <div class="source-overview-icon">
+                    <div
+                        class="source-overview-icon"
+                        aria-hidden="true"
+                    >
                         ≡
                     </div>
 
@@ -256,7 +299,10 @@
             </div>
 
             <div class="capability-note">
-                <span class="capability-note-icon">
+                <span
+                    class="capability-note-icon"
+                    aria-hidden="true"
+                >
                     ✓
                 </span>
 
@@ -381,7 +427,10 @@
         </form>
 
         {% if filter_form.errors %}
-            <div class="filter-error-message">
+            <div
+                class="filter-error-message"
+                role="alert"
+            >
                 One or more dashboard filters were invalid and
                 were ignored.
             </div>
@@ -456,6 +505,7 @@
 
                             <a
                                 href="{% url 'analyzer:investigation_pdf' investigation.id %}"
+                                aria-label="Download PDF report for {{ investigation.title }}"
                             >
                                 PDF
                                 <span aria-hidden="true">↓</span>
@@ -504,7 +554,10 @@
                             </span>
                         {% endif %}
 
-                        <span class="pagination-current">
+                        <span
+                            class="pagination-current"
+                            aria-current="page"
+                        >
                             {{ page_obj.number }}
                         </span>
 

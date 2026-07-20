@@ -40,9 +40,12 @@
             </div>
 
             <form
+                id="investigation-form"
                 method="post"
                 enctype="multipart/form-data"
                 novalidate
+                data-investigation-form
+                data-initial-tab="{% if form.event_file.errors %}upload{% else %}paste{% endif %}"
             >
                 {% csrf_token %}
 
@@ -50,6 +53,8 @@
                     <div
                         class="error-box form-error-box"
                         role="alert"
+                        tabindex="-1"
+                        data-form-error-summary
                     >
                         <strong>
                             Check the investigation input
@@ -61,13 +66,19 @@
                     </div>
                 {% endif %}
 
-                <div class="input-method-tabs">
+                <div
+                    class="input-method-tabs"
+                    role="tablist"
+                    aria-label="Security-event input method"
+                >
                     <button
                         type="button"
                         class="input-tab is-active"
                         id="paste-tab"
+                        role="tab"
                         aria-controls="paste-panel"
                         aria-selected="true"
+                        tabindex="0"
                     >
                         Paste events
                     </button>
@@ -76,8 +87,10 @@
                         type="button"
                         class="input-tab"
                         id="upload-tab"
+                        role="tab"
                         aria-controls="upload-panel"
                         aria-selected="false"
+                        tabindex="-1"
                     >
                         Upload file
                     </button>
@@ -86,6 +99,8 @@
                 <div
                     class="input-method-panel"
                     id="paste-panel"
+                    role="tabpanel"
+                    aria-labelledby="paste-tab"
                 >
                     <div class="field-group">
                         <label
@@ -96,7 +111,10 @@
 
                         {{ form.security_events }}
 
-                        <div class="field-footer">
+                        <div
+                            class="field-footer"
+                            id="security-events-guidance"
+                        >
                             <span>
                                 Use fictional or sanitized data only.
                             </span>
@@ -106,18 +124,26 @@
                             </span>
                         </div>
 
-                        {% for error in form.security_events.errors %}
-                            <p class="field-error">
-                                {{ error }}
-                            </p>
-                        {% endfor %}
+                        {% if form.security_events.errors %}
+                            <div
+                                id="security-events-errors"
+                                role="alert"
+                            >
+                                {% for error in form.security_events.errors %}
+                                    <p class="field-error">
+                                        {{ error }}
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
 
                 <div
                     class="input-method-panel"
                     id="upload-panel"
-                    hidden
+                    role="tabpanel"
+                    aria-labelledby="upload-tab"
                 >
                     <div class="field-group">
                         <label
@@ -127,11 +153,14 @@
                         </label>
 
                         <label
-                            class="file-drop-zone"
+                            class="file-drop-zone{% if form.event_file.errors %} has-error{% endif %}"
                             for="{{ form.event_file.id_for_label }}"
                             id="file-drop-zone"
                         >
-                            <span class="upload-icon">
+                            <span
+                                class="upload-icon"
+                                aria-hidden="true"
+                            >
                                 ↑
                             </span>
 
@@ -147,26 +176,37 @@
                             <span
                                 class="selected-file-name"
                                 id="selected-file-name"
+                                aria-live="polite"
                             >
                                 No file selected
                             </span>
+
+                            <span class="native-file-input">
+                                {{ form.event_file }}
+                            </span>
                         </label>
 
-                        <div class="native-file-input">
-                            {{ form.event_file }}
-                        </div>
-
                         {% if form.event_file.help_text %}
-                            <p class="field-help">
+                            <p
+                                class="field-help"
+                                id="event-file-guidance"
+                            >
                                 {{ form.event_file.help_text }}
                             </p>
                         {% endif %}
 
-                        {% for error in form.event_file.errors %}
-                            <p class="field-error">
-                                {{ error }}
-                            </p>
-                        {% endfor %}
+                        {% if form.event_file.errors %}
+                            <div
+                                id="event-file-errors"
+                                role="alert"
+                            >
+                                {% for error in form.event_file.errors %}
+                                    <p class="field-error">
+                                        {{ error }}
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div class="upload-security-note">
@@ -184,14 +224,23 @@
 
                 <button
                     class="primary-button"
+                    id="analysis-submit-button"
                     type="submit"
                 >
-                    Analyze and save investigation
+                    <span data-submit-label>
+                        Analyze and save investigation
+                    </span>
                 </button>
+
             </form>
 
             {% if analysis_error %}
-                <div class="error-box" role="alert">
+                <div
+                    class="error-box"
+                    role="alert"
+                    tabindex="-1"
+                    data-form-error-summary
+                >
                     <strong>Analysis unsuccessful</strong>
                     <p>{{ analysis_error }}</p>
                 </div>
@@ -245,164 +294,38 @@
 
     {{ sample_security_events|json_script:"sample-events-data" }}
 
-    <script>
-        const textarea = document.getElementById(
-            "{{ form.security_events.id_for_label }}"
-        );
+    <div
+        class="analysis-loading-overlay"
+        id="analysis-loading-overlay"
+        role="status"
+        hidden
+        aria-live="polite"
+    >
+        <div class="analysis-loading-card">
+            <div
+                class="analysis-spinner"
+                aria-hidden="true"
+            ></div>
 
-        const fileInput = document.getElementById(
-            "{{ form.event_file.id_for_label }}"
-        );
+            <p class="step-label">
+                ThreatLens analysis
+            </p>
 
-        const characterCount = document.getElementById(
-            "character-count"
-        );
+            <h2>
+                Investigating the submitted events
+            </h2>
 
-        const selectedFileName = document.getElementById(
-            "selected-file-name"
-        );
+            <p>
+                ThreatLens is normalizing the evidence, assessing
+                severity, mapping possible attack behavior, and
+                preparing the saved investigation.
+            </p>
 
-        const sampleData = JSON.parse(
-            document.getElementById(
-                "sample-events-data"
-            ).textContent
-        );
-
-        const pasteTab = document.getElementById(
-            "paste-tab"
-        );
-
-        const uploadTab = document.getElementById(
-            "upload-tab"
-        );
-
-        const pastePanel = document.getElementById(
-            "paste-panel"
-        );
-
-        const uploadPanel = document.getElementById(
-            "upload-panel"
-        );
-
-        function showPastePanel() {
-            pastePanel.hidden = false;
-            uploadPanel.hidden = true;
-
-            pasteTab.classList.add("is-active");
-            uploadTab.classList.remove("is-active");
-
-            pasteTab.setAttribute(
-                "aria-selected",
-                "true"
-            );
-
-            uploadTab.setAttribute(
-                "aria-selected",
-                "false"
-            );
-        }
-
-        function showUploadPanel() {
-            pastePanel.hidden = true;
-            uploadPanel.hidden = false;
-
-            uploadTab.classList.add("is-active");
-            pasteTab.classList.remove("is-active");
-
-            uploadTab.setAttribute(
-                "aria-selected",
-                "true"
-            );
-
-            pasteTab.setAttribute(
-                "aria-selected",
-                "false"
-            );
-        }
-
-        function updateCharacterCount() {
-            const count = textarea.value.length;
-
-            characterCount.textContent =
-                `${count.toLocaleString()} characters`;
-        }
-
-        function updateSelectedFile() {
-            const file = fileInput.files[0];
-
-            selectedFileName.textContent = file
-                ? `${file.name} · ${formatFileSize(file.size)}`
-                : "No file selected";
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes < 1024) {
-                return `${bytes} bytes`;
-            }
-
-            if (bytes < 1024 * 1024) {
-                return `${(bytes / 1024).toFixed(1)} KB`;
-            }
-
-            return `${(
-                bytes / (1024 * 1024)
-            ).toFixed(1)} MB`;
-        }
-
-        pasteTab.addEventListener(
-            "click",
-            showPastePanel
-        );
-
-        uploadTab.addEventListener(
-            "click",
-            showUploadPanel
-        );
-
-        document
-            .getElementById("load-sample")
-            .addEventListener("click", () => {
-                fileInput.value = "";
-                updateSelectedFile();
-
-                textarea.value = sampleData;
-                updateCharacterCount();
-
-                showPastePanel();
-                textarea.focus();
-            });
-
-        textarea.addEventListener(
-            "input",
-            () => {
-                updateCharacterCount();
-
-                if (textarea.value.trim()) {
-                    fileInput.value = "";
-                    updateSelectedFile();
-                }
-            }
-        );
-
-        fileInput.addEventListener(
-            "change",
-            () => {
-                updateSelectedFile();
-
-                if (fileInput.files.length) {
-                    textarea.value = "";
-                    updateCharacterCount();
-                }
-            }
-        );
-
-        updateCharacterCount();
-        updateSelectedFile();
-
-        {% if form.event_file.errors %}
-            showUploadPanel();
-        {% elif form.security_events.value %}
-            showPastePanel();
-        {% endif %}
-    </script>
+            <div class="analysis-progress-steps">
+                <span>Validate input</span>
+                <span>Analyze evidence</span>
+                <span>Create investigation</span>
+            </div>
+        </div>
+    </div>
 {% endblock %}

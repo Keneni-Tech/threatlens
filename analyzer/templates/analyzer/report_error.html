@@ -5,14 +5,23 @@
 {% endblock %}
 
 {% block content %}
-    <section class="card report-error-page">
+    <section
+        class="card report-error-page"
+        aria-labelledby="report-error-title"
+    >
         <p class="eyebrow">Report generation error</p>
 
-        <h1>ThreatLens could not generate this report.</h1>
+        <h1 id="report-error-title">
+            ThreatLens could not generate this report.
+        </h1>
 
         <p>
             The saved investigation is still available. Return to the
             investigation and try downloading the report again.
+        </p>
+
+        <p class="error-reference">
+            Reference ID: {{ request_id }}
         </p>
 
         <a

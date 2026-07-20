@@ -1,0 +1,38 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    Access Denied | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section
+        class="application-error-page"
+        aria-labelledby="error-title"
+    >
+        <p class="error-status-code">403</p>
+
+        <p class="eyebrow">
+            Access denied
+        </p>
+
+        <h1 id="error-title">
+            This action is not available.
+        </h1>
+
+        <p>
+            You do not have permission to perform this request,
+            or the requested feature is disabled.
+        </p>
+
+        <p class="error-reference">
+            Reference ID: {{ request_id }}
+        </p>
+
+        <a
+            class="primary-link-button"
+            href="{% url 'analyzer:investigation_list' %}"
+        >
+            Return to dashboard
+        </a>
+    </section>
+{% endblock %}

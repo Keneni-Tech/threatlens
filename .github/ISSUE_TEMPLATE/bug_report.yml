@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible ThreatLens defect.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not report vulnerabilities or include secrets or production
+        evidence here. Follow SECURITY.md for private security reporting.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Use fictional or sanitized event data only.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or version
+      description: Commit SHA or branch where the problem occurred.
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Operating system, Python version, and browser if relevant.
+
+  - type: textarea
+    id: request_id
+    attributes:
+      label: Request ID or safe diagnostics
+      description: Do not include raw events, API keys, tokens, or personal data.
+
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety
+      options:
+        - label: I removed secrets, production evidence, and personal information.
+          required: true

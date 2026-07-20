@@ -1,39 +1,46 @@
 # ThreatLens Roadmap
 
-## Phase 1 — Foundation ✅
+## Build Week MVP — complete
 
-* Django project setup
-* GitHub repository
-* OpenAI integration
-* Structured AI output
+- Django incident-investigation workflow
+- GPT-5.6 Responses API integration
+- Strict Pydantic structured outputs
+- Paste and multi-format file ingestion
+- Severity, confidence, evidence, timeline, and MITRE ATT&CK mapping
+- Saved investigation history with search, filters, sorting, and pagination
+- Executive PDF reports
+- Deterministic no-credit guided demo
+- Request IDs, health check, security headers, and deployment configuration
+- Responsive and accessible server-rendered interface
+- Automated tests, dependency auditing, and CI
 
-## Phase 2 — Incident Analysis 🚧
+## Production foundation
 
-* AI incident summaries
-* Timeline generation
-* Evidence extraction
-* MITRE ATT&CK mapping
-* Severity assessment
+- Application authentication and investigation ownership
+- PostgreSQL and tested backup/restore procedures
+- Background analysis jobs with progress and cancellation
+- Data-retention and deletion controls
+- Rate limiting and per-user quotas
+- Centralized error monitoring and CSP reporting
+- Object storage where retained source artifacts are required
 
-## Phase 3
+## Analyst workflow
 
-* Executive PDF reports
-* Investigation history
-* Saved cases
-* IOC extraction
-* Improved prompt engineering
+- Investigation notes and analyst disposition
+- Visual and filterable timelines
+- Comparison and linking of related investigations
+- Export formats for downstream case-management tools
+- Configurable investigation templates and organization guidance
+- Enrichment from approved threat-intelligence sources
 
-## Phase 4
+## Integrations and scale
 
-* Drag-and-drop log uploads
-* Multiple log formats
-* Visual timelines
-* Threat intelligence enrichment
+- SIEM and alert-platform ingestion
+- Enterprise identity and role-based access control
+- Organization workspaces and tenant isolation
+- PostgreSQL search or a dedicated search index
+- Auditable API and webhook integrations
+- Deployment profiles for managed cloud platforms
 
-## Future
-
-* Multi-user collaboration
-* Organization workspaces
-* SIEM integrations
-* Cloud deployment
-* Enterprise API
+Roadmap items are directional and should preserve human review, evidence
+traceability, and safe handling of sensitive security data.

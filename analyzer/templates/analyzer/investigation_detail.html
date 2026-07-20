@@ -5,108 +5,117 @@
 {% endblock %}
 
 {% block content %}
-<section class="detail-header">
-    <div>
-        <a
-            class="back-link"
-            href="{% url 'analyzer:investigation_list' %}"
-        >
-            ← All investigations
-        </a>
-
-        <div class="assessment-labels detail-labels">
-            <span
-                class="severity-badge severity-{{ investigation.severity }}"
+    <section
+        class="detail-header"
+        aria-labelledby="investigation-title"
+    >
+        <div>
+            <a
+                class="back-link"
+                href="{% url 'analyzer:investigation_list' %}"
             >
-                {{ investigation.get_severity_display }}
-            </span>
+                ← All investigations
+            </a>
 
-            <span class="confidence-badge">
-                {{ investigation.get_confidence_display }}
-                confidence
-            </span>
+            <div class="assessment-labels detail-labels">
+                <span
+                    class="severity-badge severity-{{ investigation.severity }}"
+                >
+                    {{ investigation.get_severity_display }}
+                </span>
+
+                <span class="confidence-badge">
+                    {{ investigation.get_confidence_display }}
+                    confidence
+                </span>
+            </div>
+
+            <h1 id="investigation-title">
+                {{ investigation.title }}
+            </h1>
+
+            <p class="detail-date">
+                Created
+                <time datetime="{{ investigation.created_at|date:'c' }}">
+                    {{ investigation.created_at|date:"F j, Y" }}
+                    at
+                    {{ investigation.created_at|time:"g:i A" }}
+                </time>
+            </p>
         </div>
 
-        <h1>{{ investigation.title }}</h1>
+        <div class="detail-actions">
+            <a
+                class="report-download-button"
+                href="{% url 'analyzer:investigation_pdf' investigation.id %}"
+            >
+                <span aria-hidden="true">↓</span>
+                Download PDF report
+            </a>
+        </div>
+    </section>
 
-        <p class="detail-date">
-            Created
-            {{ investigation.created_at|date:"F j, Y" }}
-            at
-            {{ investigation.created_at|time:"g:i A" }}
-        </p>
-    </div>
-
-    <div class="detail-actions">
-        <a
-            class="report-download-button"
-            href="{% url 'analyzer:investigation_pdf' investigation.id %}"
-        >
-            <span aria-hidden="true">↓</span>
-            Download PDF report
-        </a>
-    </div>
-</section>
     <article class="card result-card">
-        <p class="result-kicker">Assessment summary</p>
+        <h2 class="result-kicker">Assessment summary</h2>
+
         <p class="summary">
             {{ investigation.summary }}
         </p>
     </article>
 
-<article class="card result-card">
-    <h2>Input source</h2>
+    <article class="card result-card">
+        <h2>Input source</h2>
 
-    <dl class="source-metadata">
-        <div>
-            <dt>Source</dt>
-
-            <dd>
-                {{ investigation.get_input_source_display }}
-            </dd>
-        </div>
-
-        {% if investigation.source_filename %}
+        <dl class="source-metadata">
             <div>
-                <dt>Filename</dt>
+                <dt>Source</dt>
 
                 <dd>
-                    {{ investigation.source_filename }}
+                    {{ investigation.get_input_source_display }}
                 </dd>
             </div>
-        {% endif %}
 
-        {% if investigation.source_content_type %}
-            <div>
-                <dt>Content type</dt>
+            {% if investigation.source_filename %}
+                <div>
+                    <dt>Filename</dt>
 
-                <dd>
-                    {{ investigation.source_content_type }}
-                </dd>
-            </div>
-        {% endif %}
+                    <dd>
+                        {{ investigation.source_filename }}
+                    </dd>
+                </div>
+            {% endif %}
 
-        {% if investigation.source_size_bytes %}
-            <div>
-                <dt>File size</dt>
+            {% if investigation.source_content_type %}
+                <div>
+                    <dt>Content type</dt>
 
-                <dd>
-                    {{ investigation.source_size_bytes|filesizeformat }}
-                </dd>
-            </div>
-        {% endif %}
+                    <dd>
+                        {{ investigation.source_content_type }}
+                    </dd>
+                </div>
+            {% endif %}
 
-        {% if investigation.source_event_count is not None %}
-            <div>
-                <dt>Parsed events</dt>
+            {% if investigation.source_size_bytes %}
+                <div>
+                    <dt>File size</dt>
 
-                <dd>
-                    {{ investigation.source_event_count }}
-                </dd>
-            </div>
-        {% endif %}
-    </dl>
-</article>
+                    <dd>
+                        {{ investigation.source_size_bytes|filesizeformat }}
+                    </dd>
+                </div>
+            {% endif %}
+
+            {% if investigation.source_event_count is not None %}
+                <div>
+                    <dt>Parsed events</dt>
+
+                    <dd>
+                        {{ investigation.source_event_count }}
+                    </dd>
+                </div>
+            {% endif %}
+        </dl>
+    </article>
 
     <div class="results-grid">
         <article class="card result-card">

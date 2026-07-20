@@ -10,13 +10,75 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from django.utils.csp import CSP
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def env_string(
+    name: str,
+    default: str = "",
+) -> str:
+    return os.getenv(name, default).strip()
+
+
+def env_bool(
+    name: str,
+    default: bool = False,
+) -> bool:
+    value = os.getenv(name)
+
+    if value is None:
+        return default
+
+    return value.strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def env_int(
+    name: str,
+    default: int,
+) -> int:
+    value = os.getenv(name)
+
+    if value is None:
+        return default
+
+    try:
+        return int(value)
+
+    except ValueError as exc:
+        raise ValueError(
+            f"Environment variable {name} must be an integer."
+        ) from exc
+
+
+def env_list(
+    name: str,
+    default: list[str] | None = None,
+) -> list[str]:
+    value = os.getenv(name)
+
+    if value is None:
+        return default or []
+
+    return [
+        item.strip()
+        for item in value.split(",")
+        if item.strip()
+    ]
+
 
 load_dotenv(BASE_DIR / ".env")
 
@@ -24,20 +86,46 @@ load_dotenv(BASE_DIR / ".env")
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
+SECRET_KEY = env_string(
     "DJANGO_SECRET_KEY",
-    "unsafe-development-key-change-me",
+    "development-only-secret-key-change-me",
 )
 
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
+DEBUG = env_bool(
+    "DJANGO_DEBUG",
+    False,
+)
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = env_list(
+    "DJANGO_ALLOWED_HOSTS",
+    [
+        "127.0.0.1",
+        "localhost",
+    ],
+)
 
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+)
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.6")
+OPENAI_API_KEY = env_string("OPENAI_API_KEY")
+OPENAI_MODEL = env_string("OPENAI_MODEL", "gpt-5.6")
+OPENAI_MAX_RETRIES = env_int("OPENAI_MAX_RETRIES", 2)
 
-THREATLENS_MAX_INPUT_CHARACTERS = 30_000
+THREATLENS_MAX_INPUT_CHARACTERS = env_int(
+    "THREATLENS_MAX_INPUT_CHARACTERS",
+    30_000,
+)
+
+THREATLENS_ANALYSIS_TIMEOUT_SECONDS = env_int(
+    "THREATLENS_ANALYSIS_TIMEOUT_SECONDS",
+    90,
+)
+
+THREATLENS_DEMO_MODE = env_bool(
+    "THREATLENS_DEMO_MODE",
+    DEBUG,
+)
 
 # Application definition
 
@@ -54,6 +142,11 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "django.middleware.csp.ContentSecurityPolicyMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
+    "analyzer.middleware.RequestIDMiddleware",
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -128,11 +221,38 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": (
+            "django.core.files.storage.FileSystemStorage"
+        ),
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage."
+            "CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 
 # ThreatLens security-event upload limits.
-THREATLENS_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
-THREATLENS_MAX_PARSED_CHARACTERS = 200_000
+THREATLENS_MAX_UPLOAD_BYTES = env_int(
+    "THREATLENS_MAX_UPLOAD_BYTES",
+    5 * 1024 * 1024,
+)
+
+# Reject multipart requests containing more files than ThreatLens accepts.
+# A reverse proxy must still enforce the overall request-body limit.
+DATA_UPLOAD_MAX_NUMBER_FILES = 1
+
+THREATLENS_MAX_PARSED_CHARACTERS = env_int(
+    "THREATLENS_MAX_PARSED_CHARACTERS",
+    200_000,
+)
 
 THREATLENS_ALLOWED_UPLOAD_EXTENSIONS = {
     ".txt",
@@ -141,3 +261,136 @@ THREATLENS_ALLOWED_UPLOAD_EXTENSIONS = {
     ".jsonl",
     ".csv",
 }
+
+LOG_LEVEL = env_string(
+    "DJANGO_LOG_LEVEL",
+    "INFO",
+).upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": (
+                "{asctime} {levelname} "
+                "{name} request_id={request_id} "
+                "{message}"
+            ),
+            "style": "{",
+        },
+        "django": {
+            "format": (
+                "{asctime} {levelname} "
+                "{name} {message}"
+            ),
+            "style": "{",
+        },
+    },
+    "filters": {
+        "request_id": {
+            "()": (
+                "analyzer.logging_filters."
+                "RequestIDLogFilter"
+            ),
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "filters": [
+                "request_id",
+            ],
+        },
+        "django_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "django",
+        },
+    },
+    "loggers": {
+        "analyzer": {
+            "handlers": [
+                "console",
+            ],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "django": {
+            "handlers": [
+                "django_console",
+            ],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}
+
+# Django 6's built-in CSP blocks untrusted executable content while allowing
+# ThreatLens's same-origin static assets and form submissions.
+SECURE_CSP = {
+    "default-src": [CSP.SELF],
+    "base-uri": [CSP.SELF],
+    "connect-src": [CSP.SELF],
+    "font-src": [CSP.SELF],
+    "form-action": [CSP.SELF],
+    "frame-ancestors": [CSP.NONE],
+    "img-src": [CSP.SELF],
+    "object-src": [CSP.NONE],
+    "script-src": [CSP.SELF],
+    "style-src": [CSP.SELF],
+}
+
+
+if not DEBUG:
+    if (
+        len(SECRET_KEY) < 50
+        or len(set(SECRET_KEY)) < 5
+        or SECRET_KEY.startswith("django-insecure-")
+        or "change-me" in SECRET_KEY.lower()
+        or "replace-with" in SECRET_KEY.lower()
+    ):
+        raise RuntimeError(
+            "DJANGO_SECRET_KEY must be a strong, unique production secret "
+            "of at least 50 characters."
+        )
+
+    SECURE_SSL_REDIRECT = env_bool(
+        "DJANGO_SECURE_SSL_REDIRECT",
+        True,
+    )
+
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    SECURE_HSTS_SECONDS = env_int(
+        "DJANGO_SECURE_HSTS_SECONDS",
+        3600,
+    )
+
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool(
+        "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
+        False,
+    )
+
+    SECURE_HSTS_PRELOAD = env_bool(
+        "DJANGO_SECURE_HSTS_PRELOAD",
+        False,
+    )
+
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    X_FRAME_OPTIONS = "DENY"
+
+    SECURE_REFERRER_POLICY = (
+        "strict-origin-when-cross-origin"
+    )
+
+    if env_bool(
+        "DJANGO_TRUST_X_FORWARDED_PROTO",
+        False,
+    ):
+        SECURE_PROXY_SSL_HEADER = (
+            "HTTP_X_FORWARDED_PROTO",
+            "https",
+        )

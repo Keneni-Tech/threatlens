@@ -1,0 +1,38 @@
+{% extends "analyzer/base.html" %}
+
+{% block title %}
+    Page Not Found | ThreatLens
+{% endblock %}
+
+{% block content %}
+    <section
+        class="application-error-page"
+        aria-labelledby="error-title"
+    >
+        <p class="error-status-code">404</p>
+
+        <p class="eyebrow">
+            Page not found
+        </p>
+
+        <h1 id="error-title">
+            This ThreatLens resource does not exist.
+        </h1>
+
+        <p>
+            The investigation may have been removed, or the address
+            may be incorrect.
+        </p>
+
+        <p class="error-reference">
+            Reference ID: {{ request_id }}
+        </p>
+
+        <a
+            class="primary-link-button"
+            href="{% url 'analyzer:investigation_list' %}"
+        >
+            Return to dashboard
+        </a>
+    </section>
+{% endblock %}

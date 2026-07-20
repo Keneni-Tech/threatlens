@@ -19,57 +19,107 @@
         rel="stylesheet"
         href="{% static 'analyzer/app.css' %}"
     >
+
+    <script
+        src="{% static 'analyzer/app.js' %}"
+        defer
+    ></script>
 </head>
 
 <body>
-<header class="site-header">
-    <div class="container header-content">
-        <a
-            class="brand"
-            href="{% url 'analyzer:investigation_list' %}"
-        >
-            <span class="brand-mark">
-                TL
-            </span>
+    <a
+        class="skip-link"
+        href="#main-content"
+    >
+        Skip to main content
+    </a>
 
-            <span class="brand-copy">
-                <strong>ThreatLens</strong>
-                <small>AI Incident Investigator</small>
-            </span>
-        </a>
-
-        <nav
-            class="navigation"
-            aria-label="Primary navigation"
-        >
+    <header class="site-header">
+        <div class="container header-content">
             <a
-                class="{% if request.resolver_match.url_name == 'investigation_list' %}is-active{% endif %}"
+                class="brand"
                 href="{% url 'analyzer:investigation_list' %}"
             >
-                Dashboard
+                <span
+                    class="brand-mark"
+                    aria-hidden="true"
+                >
+                    TL
+                </span>
+
+                <span class="brand-copy">
+                    <strong>ThreatLens</strong>
+                    <small>AI Incident Investigator</small>
+                </span>
             </a>
 
-            <a
-                class="{% if request.resolver_match.url_name == 'investigation_create' %}is-active{% endif %}"
-                href="{% url 'analyzer:investigation_create' %}"
+            <nav
+                class="navigation"
+                aria-label="Primary navigation"
             >
-                Analyze
-            </a>
+                <a
+                    class="{% if request.resolver_match.url_name == 'investigation_list' %}is-active{% endif %}"
+                    href="{% url 'analyzer:investigation_list' %}"
+                    {% if request.resolver_match.url_name == "investigation_list" %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Dashboard
+                </a>
 
-            <a
-                class="nav-button"
-                href="{% url 'analyzer:investigation_create' %}"
+                <a
+                    class="{% if request.resolver_match.url_name == 'investigation_create' %}is-active{% endif %}"
+                    href="{% url 'analyzer:investigation_create' %}"
+                    {% if request.resolver_match.url_name == "investigation_create" %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Analyze
+                </a>
+
+                <a
+                    class="nav-button"
+                    href="{% url 'analyzer:investigation_create' %}"
+                >
+                    <span aria-hidden="true">+</span>
+                    New case
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main
+        class="container main-content"
+        id="main-content"
+    >
+        {% if messages %}
+            <div
+                class="message-container"
+                aria-label="Application messages"
+                aria-live="polite"
             >
-                <span aria-hidden="true">+</span>
-                New case
-            </a>
-        </nav>
-    </div>
-</header>
+                {% for message in messages %}
+                    <div
+                        class="application-message message-{{ message.tags|default:'info' }}"
+                        role="status"
+                    >
+                        <span>{{ message }}</span>
 
-    <main class="container main-content">
+                        <button
+                            type="button"
+                            aria-label="Dismiss message"
+                            data-dismiss-message
+                        >
+                            ×
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         {% block content %}
         {% endblock %}
     </main>
+
 </body>
 </html>

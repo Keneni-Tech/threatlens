@@ -6,6 +6,7 @@ from django.conf import settings
 from openai import (
     APIConnectionError,
     APIStatusError,
+    APITimeoutError,
     AuthenticationError,
     OpenAI,
     RateLimitError,
@@ -35,16 +36,38 @@ class IncidentAnalyzer:
         *,
         api_key: str | None = None,
         model: str | None = None,
+        client: OpenAI | None = None,
     ) -> None:
-        resolved_api_key = api_key or settings.OPENAI_API_KEY
+        resolved_api_key = (
+            api_key
+            if api_key is not None
+            else settings.OPENAI_API_KEY
+        )
 
-        if not resolved_api_key:
+        if client is None and not resolved_api_key:
             raise IncidentAnalysisError(
                 "The OPENAI_API_KEY environment variable is not configured."
             )
 
         self.model = model or settings.OPENAI_MODEL
-        self.client = OpenAI(api_key=resolved_api_key)
+        self.max_input_characters = getattr(
+            settings,
+            "THREATLENS_MAX_PARSED_CHARACTERS",
+            200_000,
+        )
+        self.client = client or OpenAI(
+            api_key=resolved_api_key,
+            timeout=getattr(
+                settings,
+                "THREATLENS_ANALYSIS_TIMEOUT_SECONDS",
+                90,
+            ),
+            max_retries=getattr(
+                settings,
+                "OPENAI_MAX_RETRIES",
+                2,
+            ),
+        )
 
     def analyze(self, security_events: str) -> IncidentAssessment:
         normalized_events = security_events.strip()
@@ -52,6 +75,12 @@ class IncidentAnalyzer:
         if not normalized_events:
             raise IncidentAnalysisError(
                 "Security-event data is required."
+            )
+
+        if len(normalized_events) > self.max_input_characters:
+            raise IncidentAnalysisError(
+                "Security-event data exceeds the configured "
+                f"{self.max_input_characters:,}-character analysis limit."
             )
 
         try:
@@ -77,6 +106,12 @@ class IncidentAnalyzer:
                 text_format=IncidentAssessment,
             )
 
+        except APITimeoutError as exc:
+            logger.warning("OpenAI incident analysis timed out.")
+            raise IncidentAnalysisError(
+                "The AI service took too long to respond. Try again."
+            ) from exc
+
         except AuthenticationError as exc:
             logger.exception("OpenAI authentication failed.")
             raise IncidentAnalysisError(
@@ -97,8 +132,9 @@ class IncidentAnalyzer:
 
         except APIStatusError as exc:
             logger.exception(
-                "OpenAI returned an API error with status %s.",
+                "OpenAI returned API status %s (request_id=%s).",
                 exc.status_code,
+                exc.request_id,
             )
             raise IncidentAnalysisError(
                 "The AI service returned an unexpected error."
@@ -113,11 +149,37 @@ class IncidentAnalyzer:
         assessment = response.output_parsed
 
         if assessment is None:
+            if self._has_refusal(response):
+                logger.warning(
+                    "OpenAI declined the incident analysis "
+                    "(request_id=%s).",
+                    getattr(response, "_request_id", "-"),
+                )
+                raise IncidentAnalysisError(
+                    "The AI service could not analyze this input safely."
+                )
+
             logger.warning(
-                "OpenAI response did not contain a parsed assessment."
+                "OpenAI response did not contain a parsed assessment "
+                "(request_id=%s).",
+                getattr(response, "_request_id", "-"),
             )
             raise IncidentAnalysisError(
                 "The AI service did not return a usable incident assessment."
             )
 
+        logger.info(
+            "OpenAI incident analysis completed (request_id=%s).",
+            getattr(response, "_request_id", "-"),
+        )
+
         return assessment
+
+    @staticmethod
+    def _has_refusal(response: object) -> bool:
+        for output_item in getattr(response, "output", ()):
+            for content_item in getattr(output_item, "content", ()):
+                if getattr(content_item, "type", "") == "refusal":
+                    return True
+
+        return False

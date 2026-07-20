@@ -19,6 +19,12 @@ from django.contrib import admin
 from django.urls import include, path
 
 
+handler400 = "analyzer.views.bad_request"
+handler403 = "analyzer.views.permission_denied"
+handler404 = "analyzer.views.page_not_found"
+handler500 = "analyzer.views.server_error"
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("analyzer.urls")),

@@ -19,6 +19,10 @@ class Investigation(models.Model):
         MEDIUM = "medium", "Medium"
         HIGH = "high", "High"
 
+    class InputSource(models.TextChoices):
+        PASTED = "pasted", "Pasted text"
+        UPLOADED_FILE = "uploaded_file", "Uploaded file"
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -40,9 +44,6 @@ class Investigation(models.Model):
         choices=Confidence.choices,
         db_index=True,
     )
-    class InputSource(models.TextChoices):
-        PASTED = "pasted", "Pasted text"
-        UPLOADED_FILE = "uploaded_file", "Uploaded file"
 
     summary = models.TextField()
 
@@ -110,7 +111,7 @@ class Investigation(models.Model):
             "analyzer:investigation_detail",
             kwargs={"investigation_id": self.id},
         )
-    
+
     @property
     def display_source_name(self) -> str:
         if (
@@ -121,7 +122,6 @@ class Investigation(models.Model):
             return self.source_filename
 
         return self.get_input_source_display()
-
 
     @property
     def short_case_id(self) -> str:

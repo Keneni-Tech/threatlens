@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 SeverityLevel = Literal[
@@ -18,7 +18,14 @@ ConfidenceLevel = Literal[
 ]
 
 
-class EvidenceItem(BaseModel):
+class ThreatLensSchema(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+
+class EvidenceItem(ThreatLensSchema):
     title: str = Field(
         description="Short title describing the important evidence."
     )
@@ -34,7 +41,7 @@ class EvidenceItem(BaseModel):
     )
 
 
-class MitreTechnique(BaseModel):
+class MitreTechnique(ThreatLensSchema):
     technique_id: str = Field(
         description=(
             "MITRE ATT&CK technique identifier when reasonably supported, "
@@ -45,7 +52,7 @@ class MitreTechnique(BaseModel):
     explanation: str
 
 
-class IncidentAssessment(BaseModel):
+class IncidentAssessment(ThreatLensSchema):
     title: str = Field(
         description="Concise incident title."
     )
@@ -113,3 +120,24 @@ class IncidentAssessment(BaseModel):
             "needed to confirm the assessment."
         ),
     )
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if not value:
+            raise ValueError("The incident title cannot be empty.")
+
+        if len(value) > 255:
+            raise ValueError(
+                "The incident title cannot exceed 255 characters."
+            )
+
+        return value
+
+    @field_validator("summary")
+    @classmethod
+    def validate_summary(cls, value: str) -> str:
+        if not value:
+            raise ValueError("The incident summary cannot be empty.")
+
+        return value

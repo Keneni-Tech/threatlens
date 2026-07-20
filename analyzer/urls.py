@@ -22,8 +22,18 @@ urlpatterns = [
         name="investigation_detail",
     ),
     path(
-    "investigations/<uuid:investigation_id>/report.pdf",
-    views.investigation_pdf,
-    name="investigation_pdf",
-),
+        "investigations/<uuid:investigation_id>/report.pdf",
+        views.investigation_pdf,
+        name="investigation_pdf",
+    ),
+    path(
+        "health/",
+        views.health_check,
+        name="health_check",
+    ),
+    path(
+        "demo/",
+        views.create_demo_investigation,
+        name="create_demo_investigation",
+    ),
 ]
