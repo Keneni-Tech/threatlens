@@ -1,105 +1,108 @@
-# ThreatLens Demonstration Script
+# ThreatLens Devpost Demo Script
 
-Target duration: three to four minutes.
+Target duration: 2 minutes 45 seconds. Devpost requires the public
+YouTube demonstration to be shorter than three minutes.
 
-## Before recording or presenting
+## Before recording
 
-- Set `THREATLENS_DEMO_MODE=True`.
-- Run `python manage.py seed_demo`.
-- Use only the fictional data in `samples/`.
-- Confirm the dashboard, case detail, and PDF export load.
-- Keep the deterministic demo as the primary path; a live API call is
-  optional.
-- Use a browser window near 1440 × 900 with no unrelated tabs or
-  personal bookmarks visible.
+- Open the deployed application and wait for Render to finish waking up.
+- Confirm **Run guided demo**, the case detail, and PDF export all work.
+- Use only the fictional guided-demo data.
+- Use a clean browser window around 1440 × 900 at 100% zoom.
+- Hide bookmarks, notifications, personal tabs, API keys, and account data.
+- Prepare the dashboard, guided case, and new-case page in separate tabs.
+- Record at 1080p with clear microphone audio.
 
-## 1. Frame the problem — 20 seconds
+Do not run **Load sample** during the public demonstration unless the
+deployment has a protected OpenAI API key. The deterministic guided demo
+is the primary judging path and consumes no API credits.
 
-“Security analysts often receive disconnected logs and alerts. Turning
-those events into a coherent, reviewable incident assessment takes time
-and can produce inconsistent documentation.”
+## 0:00–0:15 — Problem
 
-## 2. Introduce ThreatLens — 20 seconds
+Show the dashboard.
 
-“ThreatLens is an AI-assisted investigation workspace built with Django,
-GPT-5.6, and Pydantic structured outputs. It organizes sanitized event
-data into evidence, timeline, severity, MITRE ATT&CK mappings, response
-recommendations, and explicit limitations.”
+> Security analysts often receive disconnected logs and alerts. Turning
+> those events into a coherent, reviewable incident assessment takes time
+> and can produce inconsistent documentation.
 
-Emphasize that ThreatLens supports analyst decisions and never executes
-containment actions.
+## 0:15–0:32 — Solution
 
-## 3. Dashboard — 30 seconds
+Keep the dashboard visible and briefly point to its main metrics.
 
-Open `/` and show:
+> ThreatLens is an AI-assisted incident investigation platform built with
+> Django, GPT-5.6, the OpenAI Responses API, and strict Pydantic structured
+> outputs. It converts sanitized event data into evidence, a timeline,
+> severity, MITRE ATT&CK mappings, and response recommendations while
+> keeping the analyst responsible for every decision.
 
-- total and high-priority investigations
-- severity distribution
-- paste-versus-upload metrics
-- recent activity
-- search, filters, sorting, and pagination
+## 0:32–0:50 — Investigation workspace
 
-Mention that the dashboard is server-rendered and remains usable without
-a frontend framework.
+Show the severity cards, recent activity, and search filters.
 
-## 4. Deterministic guided demo — 75 seconds
+> The dashboard summarizes investigation posture and lets analysts search,
+> filter, sort, and revisit saved cases. The interface is server-rendered,
+> responsive, and designed to remain clear during an active investigation.
 
-Select **Run guided demo**.
+## 0:50–1:38 — Guided investigation
 
-Explain that this path:
+Select **Run guided demo** and scroll deliberately through the detail page.
 
-- uses fixed fictional evidence
-- is repeatable
-- consumes no API credits
-- exercises the same saved-case, detail, search, and PDF workflows
+> The guided demo creates a deterministic fictional investigation without
+> consuming API credits, giving judges a safe and repeatable way to test the
+> complete product. The result includes severity and confidence, an
+> executive summary, evidence-linked findings, a chronological timeline,
+> and a possible attack path. ThreatLens maps observed behavior to MITRE
+> ATT&CK and separates indicators, affected assets, containment actions,
+> recommendations, and limitations so analysts can distinguish evidence
+> from model-assisted conclusions.
 
-On the detail page, point out:
+Do not attempt to read every field. Pause briefly over evidence, timeline,
+MITRE ATT&CK, recommendations, and limitations.
 
-1. Critical severity and high confidence
-2. Executive summary and input provenance
-3. Evidence references and chronological timeline
-4. Possible attack path
-5. MITRE ATT&CK mappings
-6. Indicators, affected asset, and affected account
-7. Investigation and containment recommendations
-8. Limitations and missing evidence
+## 1:38–2:02 — Input and GPT-5.6 workflow
 
-## 5. Input workflow — 40 seconds
+Open **New case**, show the paste and upload tabs, and do not submit.
 
-Open **New case**.
+> Analysts can paste sanitized logs or upload TXT, LOG, JSON, JSONL, and CSV
+> files. ThreatLens validates and normalizes the input, treats log content
+> as untrusted evidence, and sends the bounded analysis request to GPT-5.6
+> through the Responses API. The response must pass a strict Pydantic schema
+> before an investigation is saved. Timeouts, refusals, malformed output,
+> and provider failures are handled explicitly.
 
-Show both tabs:
-
-- pasted, sanitized events
-- TXT, LOG, JSON, JSONL, or CSV upload
-
-Optionally select a file from `samples/`. Mention the upload and parsing
-limits, the prompt-injection boundary, the loading state, and strict
-structured-output validation.
-
-Avoid making a live API request during the core demonstration. If live
-analysis is shown, prepare a fallback by keeping the guided case open in
-another tab.
-
-## 6. Reporting — 25 seconds
+## 2:02–2:18 — Reporting
 
 Return to the guided case and select **Download PDF report**.
 
-Explain that the executive PDF is generated from the saved validated
-investigation and does not make another OpenAI request.
+> Analysts can export an executive PDF from the saved, validated result.
+> Exporting does not make another OpenAI request, so the report remains
+> consistent with the reviewed investigation.
 
-## 7. Engineering close — 25 seconds
+## 2:18–2:40 — Codex and engineering
 
-Summarize:
+Return to the investigation summary or briefly show the GitHub repository.
 
-- focused Django services and server-rendered accessibility
-- OpenAI Responses API with strict Pydantic output
-- retry, timeout, refusal, and provider-error handling
-- deterministic no-credit demo
-- upload validation, CSP, request IDs, and deployment checks
-- human review and stated limitations
+> I used Codex throughout Build Week to review the Django architecture,
+> separate parsing and analysis services, strengthen upload and deployment
+> security, improve accessibility and responsive behavior, expand automated
+> tests, and prepare the Render deployment. GPT-5.6 provides the structured
+> security reasoning; Codex accelerated the engineering and quality-review
+> workflow around it.
 
-Closing line:
+## 2:40–2:48 — Close
 
-“ThreatLens helps analysts move from raw event evidence to an organized,
-reviewable, and reportable assessment while preserving human oversight.”
+Finish on the investigation summary.
+
+> ThreatLens helps analysts move from raw event evidence to an organized,
+> reviewable, and reportable assessment while preserving human oversight.
+
+## Recording and upload checklist
+
+1. Record one dry run and keep the final cut below 2:55.
+2. Remove long page loads, cursor mistakes, and silent transitions.
+3. Keep narration audible and avoid background music that competes with it.
+4. Export as MP4 at 1080p and 30 frames per second.
+5. Upload to YouTube with visibility set to **Public**.
+6. Add the live application and GitHub repository links to the description.
+7. Enable or correct captions.
+8. Open the final YouTube link in a signed-out browser before submitting it.
