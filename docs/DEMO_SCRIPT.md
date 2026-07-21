@@ -1,6 +1,6 @@
 # ThreatLens Devpost Demo Script
 
-Target duration: 2 minutes 45 seconds. Devpost requires the public
+Target duration: 2 minutes 50 seconds. Devpost requires the public
 YouTube demonstration to be shorter than three minutes.
 
 ## Before recording
@@ -17,7 +17,15 @@ Do not run **Load sample** during the public demonstration unless the
 deployment has a protected OpenAI API key. The deterministic guided demo
 is the primary judging path and consumes no API credits.
 
-## 0:00–0:15 — Problem
+## 0:00–0:10 — Introduction
+
+Show the ThreatLens dashboard or project title.
+
+> Hello, and welcome to ThreatLens, my OpenAI Build Week submission in the
+> Developer Tools track. ThreatLens helps security analysts investigate
+> complex event data with AI-assisted, evidence-focused analysis.
+
+## 0:10–0:23 — Problem
 
 Show the dashboard.
 
@@ -25,7 +33,7 @@ Show the dashboard.
 > those events into a coherent, reviewable incident assessment takes time
 > and can produce inconsistent documentation.
 
-## 0:15–0:32 — Solution
+## 0:23–0:40 — Solution
 
 Keep the dashboard visible and briefly point to its main metrics.
 
@@ -35,7 +43,7 @@ Keep the dashboard visible and briefly point to its main metrics.
 > severity, MITRE ATT&CK mappings, and response recommendations while
 > keeping the analyst responsible for every decision.
 
-## 0:32–0:50 — Investigation workspace
+## 0:40–0:56 — Investigation workspace
 
 Show the severity cards, recent activity, and search filters.
 
@@ -43,7 +51,7 @@ Show the severity cards, recent activity, and search filters.
 > filter, sort, and revisit saved cases. The interface is server-rendered,
 > responsive, and designed to remain clear during an active investigation.
 
-## 0:50–1:38 — Guided investigation
+## 0:56–1:40 — Guided investigation
 
 Select **Run guided demo** and scroll deliberately through the detail page.
 
@@ -59,7 +67,7 @@ Select **Run guided demo** and scroll deliberately through the detail page.
 Do not attempt to read every field. Pause briefly over evidence, timeline,
 MITRE ATT&CK, recommendations, and limitations.
 
-## 1:38–2:02 — Input and GPT-5.6 workflow
+## 1:40–2:03 — Input and GPT-5.6 workflow
 
 Open **New case**, show the paste and upload tabs, and do not submit.
 
@@ -70,7 +78,7 @@ Open **New case**, show the paste and upload tabs, and do not submit.
 > before an investigation is saved. Timeouts, refusals, malformed output,
 > and provider failures are handled explicitly.
 
-## 2:02–2:18 — Reporting
+## 2:03–2:18 — Reporting
 
 Return to the guided case and select **Download PDF report**.
 
@@ -78,7 +86,7 @@ Return to the guided case and select **Download PDF report**.
 > Exporting does not make another OpenAI request, so the report remains
 > consistent with the reviewed investigation.
 
-## 2:18–2:40 — Codex and engineering
+## 2:18–2:42 — Codex and engineering
 
 Return to the investigation summary or briefly show the GitHub repository.
 
@@ -89,7 +97,7 @@ Return to the investigation summary or briefly show the GitHub repository.
 > security reasoning; Codex accelerated the engineering and quality-review
 > workflow around it.
 
-## 2:40–2:48 — Close
+## 2:42–2:50 — Close
 
 Finish on the investigation summary.
 
